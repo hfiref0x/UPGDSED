@@ -35,7 +35,7 @@ In order to build from source you need Microsoft Visual Studio 2015 and later ve
 * Disable PatchGuard  - updated for Win7 & Win8 by Fyyre, http://fyyre.ru/vault/bootloader_v2.txt
 * bootkit_fasm - disables PG/DS via MBR bootkit by Fyyre, http://fyyre.ru/vault/bootkit_fasm.7z
 * Kernel Patch Protection, https://en.wikipedia.org/wiki/Kernel_Patch_Protection
-* Driver Signing Policy, https://msdn.microsoft.com/ru-ru/windows/hardware/drivers/install/kernel-mode-code-signing-policy--windows-vista-and-later-
+* Driver Signing Policy, https://msdn.microsoft.com/en-us/windows/hardware/drivers/install/kernel-mode-code-signing-policy--windows-vista-and-later-
 
 # Authors
 * EP_X0FF, https://github.com/hfiref0x
