@@ -1,0 +1,5 @@
+#include "resource.h"
+#include "winres.h"
+LANGUAGE LANG_ENGLISH, SUBLANG_ENGLISH_US
+IDR_DBGHELP RCDATA "symdll\\dbghelp.dll"
+IDR_SYMSRV RCDATA "symdll\\symsrv.dll"
