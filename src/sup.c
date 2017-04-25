@@ -603,6 +603,7 @@ BOOL supPatchFile(
         }
 
         CloseHandle(hFile);
+        hFile = INVALID_HANDLE_VALUE;
 
         __try {
 

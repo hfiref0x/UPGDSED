@@ -65,7 +65,7 @@ BOOLEAN QuerySeValidateImageDataOffsetSymbols(
 
         //
         // Windows 7 special case, SeValidateImageData pattern is not unique.
-        // Requred code located in PAGE section.
+        // Required code located in PAGE section.
         //
 
         ScanPtr = supLookupImageSectionByNameULONG('EGAP', DllBase, &ScanSize);
@@ -90,7 +90,6 @@ BOOLEAN QuerySeValidateImageDataOffsetSymbols(
     case 10586:
     case 14393:
     case 15063:
-    case 16170:
 
         ScanPtr = (PVOID)SymbolAddressFromName(TEXT("SeValidateImageData"));
         ScanSize = 0x200;
