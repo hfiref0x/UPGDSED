@@ -15,6 +15,8 @@ x64 Windows, supported versions:
 
 Administrative privilege is required.
 
+In case of EFI boot SecureBoot must be disabled.
+
 # WARNING
 
 Using this program might render your computer into an unbootable state.
