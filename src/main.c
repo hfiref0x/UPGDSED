@@ -32,6 +32,7 @@ WCHAR       g_szDeviceParition[MAX_PATH + 1];
 //ntos
 
 PATCH_CONTEXT CcInitializeBcbProfiler;
+PATCH_CONTEXT KeInitAmd64SpecificState;
 PATCH_CONTEXT SeValidateImageData;
 PATCH_CONTEXT SepInitializeCodeIntegrity;
 
@@ -210,6 +211,84 @@ BOOLEAN QueryCcInitializeBcbProfilerOffsetSymbols(
     }
 
     return (Address != 0);
+}
+
+BOOLEAN QueryKeInitAmd64SpecificStateOffsetSymbols(
+	_In_ ULONG BuildNumber,
+	_In_ PBYTE DllBase,
+	_In_ SIZE_T DllVirtualSize,
+	_In_ IMAGE_NT_HEADERS *NtHeaders
+)
+{
+	ULONG ScanSize = 0, PatternSize = 0, SkipBytes = 0;
+	ULONG_PTR Address = 0;
+	PVOID Ptr, Pattern = NULL;
+	PVOID ScanPtr = NULL;
+
+	ScanPtr = supLookupImageSectionByNameULONG('TINI', DllBase, &ScanSize);
+
+	switch (BuildNumber) {
+
+	case 9200:
+
+		ScanPtr = DllBase;
+		ScanSize = (ULONG)DllVirtualSize;
+		Pattern = ptSeValidateImageData_9200;
+		PatternSize = sizeof(ptSeValidateImageData_9200);
+		SkipBytes = ptSkipBytesSeValidateImageData_9200;
+		break;
+
+	case 9600:
+	case 10240:
+	case 10586:
+	case 14393:
+	case 15063:
+
+		if (ScanPtr) {
+			Pattern = ptKeInitAmd64SpecificState_15063;
+			PatternSize = sizeof(ptKeInitAmd64SpecificState_15063);
+			SkipBytes = ptSubBytesKeInitAmd64SpecificState_15063;
+		}
+		break;
+
+	default:
+		break;
+	}
+
+	if ((ScanPtr == NULL) || (ScanSize == 0))
+		return FALSE;
+
+	if ((Pattern == NULL) || (PatternSize == 0))
+		return FALSE;
+
+	Address = (ULONG_PTR)FindPattern(
+		ScanPtr,
+		ScanSize,
+		Pattern,
+		PatternSize);
+
+	if (Address != 0) {
+
+		//
+		// Convert to physical offset in file.
+		//
+		Ptr = RtlAddressInSectionTable(NtHeaders, DllBase, (ULONG)(Address - (ULONG_PTR)DllBase));
+		KeInitAmd64SpecificState.AddressOfPatch = (ULONG_PTR)Ptr - (ULONG_PTR)DllBase;
+
+		//
+		// Skip 'mov' instruction
+		//
+		KeInitAmd64SpecificState.AddressOfPatch -= SkipBytes;
+
+		//
+		// Assign patch data block to be written in patch routine.
+		//
+		KeInitAmd64SpecificState.PatchData = pdKeInitAmd64SpecificState;
+		KeInitAmd64SpecificState.SizeOfPatch = sizeof(pdKeInitAmd64SpecificState);
+
+	}
+
+	return (Address != 0);
 }
 
 /*
@@ -486,6 +565,18 @@ BOOLEAN ScanNtos()
                 CcInitializeBcbProfiler.AddressOfPatch);
             cuiPrintText(g_ConOut, szBuffer, g_ConsoleOutput, TRUE);
 
+			//
+			// Scan for KeInitAmd64SpecificState
+			//
+			if (!QueryKeInitAmd64SpecificStateOffsetSymbols(BuildNumber, DllBase, DllVirtualSize, NtHeaders)) {
+				supShowError(ERROR_CAN_NOT_COMPLETE, TEXT("Cannot query KeInitAmd64SpecificState offset"));
+				break;
+			}
+
+			_snwprintf_s(szBuffer, MAX_PATH * 2, MAX_PATH, TEXT("-> KeInitAmd64SpecificState\t%08X"),
+				KeInitAmd64SpecificState.AddressOfPatch);
+			cuiPrintText(g_ConOut, szBuffer, g_ConsoleOutput, TRUE);
+
             //
             //Scan for SepInitializeCodeIntegrity
             //
@@ -613,7 +704,7 @@ BOOLEAN ModifyFilesAndMove(
 )
 {
     SIZE_T DestLength;
-    ULONG_PTR PatchContext[3];
+    ULONG_PTR PatchContext[4];
     WCHAR szBuffer[MAX_PATH * 2];
     WCHAR szDest[MAX_PATH * 2];
 
@@ -631,8 +722,9 @@ BOOLEAN ModifyFilesAndMove(
     PatchContext[0] = (ULONG_PTR)&SeValidateImageData;
     PatchContext[1] = (ULONG_PTR)&CcInitializeBcbProfiler;
     PatchContext[2] = (ULONG_PTR)&SepInitializeCodeIntegrity;
+	PatchContext[3] = (ULONG_PTR)&KeInitAmd64SpecificState;
 
-    if (!supPatchFile(szBuffer, (ULONG_PTR*)&PatchContext, 3))
+    if (!supPatchFile(szBuffer, (ULONG_PTR*)&PatchContext, 4))
         return FALSE;
 
     if (!MoveFileEx(szBuffer,
