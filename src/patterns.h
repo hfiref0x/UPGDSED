@@ -47,14 +47,8 @@ unsigned char ptCcInitializeBcbProfiler_7601[] = {
     0x10, 0x89, 0x4C, 0x24, 0x08, 0x53, 0x55, 0x56
 };
 
-// always in INIT
-//Patch data for KeInitAmd64SpecificState (return TRUE; )
-unsigned char pdKeInitAmd64SpecificState[] = { 0xEB };
-
-//search pattern for Windows 10 10.0.10563.0
-unsigned char ptKeInitAmd64SpecificState_15063[] = { 0x0B, 0xD0, 0x8B, 0xCA, 0xF7, 0xD9 };
-
-#define ptSubBytesKeInitAmd64SpecificState_15063	16
+//Patch data for KiFilterFiberContext ( return TRUE; )
+unsigned char pdKiFilterFiberContext[] = { 0xB0, 0x01, 0xC3 };
 
 //Always in PAGE
 
