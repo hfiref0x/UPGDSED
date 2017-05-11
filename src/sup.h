@@ -4,9 +4,9 @@
 *
 *  TITLE:       SUP.H
 *
-*  VERSION:     1.00
+*  VERSION:     1.10
 *
-*  DATE:        21 Apr 2017
+*  DATE:        10 May 2017
 *
 *  Common header file for the program support routines.
 *
@@ -23,9 +23,12 @@ VOID supShowError(
     _In_ LPWSTR Msg);
 
 _Success_(return == TRUE)
-BOOL supGetBinaryBuildVersion(
+BOOL supGetBinaryVersionNumbers(
     _In_ LPWSTR lpFileName,
-    _Out_ ULONG *BuildNumber);
+    _Out_opt_ ULONG *MajorVersion,
+    _Out_opt_ ULONG *MinorVersion,
+    _Out_opt_ ULONG *Build,
+    _Out_opt_ ULONG *Revision);
 
 BOOL supEnablePrivilege(
     _In_ DWORD PrivilegeName,
@@ -65,5 +68,8 @@ BOOL supPatchFile(
 BOOL supRunProcessWithParamsAndWait(
     _In_ LPWSTR lpszParameters,
     _Out_ PDWORD ExitCode);
+
+BOOL supDisablePeAuthAutoStart(
+    VOID);
 
 #define PathFileExists(lpszPath) (GetFileAttributes(lpszPath) != (DWORD)-1)

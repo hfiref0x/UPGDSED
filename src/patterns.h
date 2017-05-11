@@ -4,9 +4,9 @@
 *
 *  TITLE:       PATTERNS.H
 *
-*  VERSION:     1.00
+*  VERSION:     1.10
 *
-*  DATE:        21 Apr 2017
+*  DATE:        11 May 2017
 *
 *  Search patterns and patches header file.
 *
@@ -37,8 +37,9 @@ unsigned char ptSeValidateImageData_9600_15063[] = { 0xB8, 0x28, 0x04, 0x00, 0xC
 #define ptSkipBytesSeValidateImageData_9600_15063       1
 
 //always in INIT
-
-//Patch data for CcInitializeBcbProfiler ( return TRUE; )
+//Patch data for CcInitializeBcbProfiler
+//mov al, 1
+//retn
 unsigned char pdCcInitializeBcbProfiler[] = { 0xB0, 0x01, 0xC3 };
 
 //search pattern for Windows 7
@@ -47,11 +48,22 @@ unsigned char ptCcInitializeBcbProfiler_7601[] = {
     0x10, 0x89, 0x4C, 0x24, 0x08, 0x53, 0x55, 0x56
 };
 
-//Patch data for KiFilterFiberContext ( return TRUE; )
+//Patch data for KiFilterFiberContext
+//mov al, 1
+//retn
 unsigned char pdKiFilterFiberContext[] = { 0xB0, 0x01, 0xC3 };
 
-//Always in PAGE
+//Patch data for KeInitAmd64SpecificState
+//xor eax, eax
+//retn
+unsigned char pdKeInitAmd64SpecificState[] = { 0x33, 0xC0, 0xC3 };
 
+//Patch data for ExpLicenseWatchInitWorker
+//xor eax, eax
+//retn
+unsigned char pdExpLicenseWatchInitWorker[] = { 0x33, 0xC0, 0xC3 };
+
+//Always in PAGE
 //Patch date for SepInitializeCodeIntegrity
 unsigned char pdSepInitializeCodeIntegrity[] = { 0x31, 0xC9 };
 

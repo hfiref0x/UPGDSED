@@ -4,9 +4,9 @@
 *
 *  TITLE:       SUP.C
 *
-*  VERSION:     1.00
+*  VERSION:     1.10
 *
-*  DATE:        22 Apr 2017
+*  DATE:        10 May 2017
 *
 * THIS CODE AND INFORMATION IS PROVIDED "AS IS" WITHOUT WARRANTY OF
 * ANY KIND, EITHER EXPRESSED OR IMPLIED, INCLUDING BUT NOT LIMITED
@@ -146,17 +146,20 @@ BOOLEAN supSecureBootEnabled(
 }
 
 /*
-* supGetBinaryBuildVersion
+* supGetBinaryVersionNumbers
 *
 * Purpose:
 *
-* Return build number from version info.
+* Return version numbers from version info.
 *
 */
 _Success_(return == TRUE)
-BOOL supGetBinaryBuildVersion(
+BOOL supGetBinaryVersionNumbers(
     _In_ LPWSTR lpFileName,
-    _Out_ ULONG *BuildNumber
+    _Out_opt_ ULONG *MajorVersion,
+    _Out_opt_ ULONG *MinorVersion,
+    _Out_opt_ ULONG *Build,
+    _Out_opt_ ULONG *Revision
 )
 {
     BOOL bResult = FALSE;
@@ -164,9 +167,6 @@ BOOL supGetBinaryBuildVersion(
     PVOID vinfo = NULL;
     UINT Length;
     VS_FIXEDFILEINFO *pFileInfo;
-
-    if (BuildNumber == NULL)
-        return FALSE;
 
     dwHandle = 0;
     dwSize = GetFileVersionInfoSize(lpFileName, &dwHandle);
@@ -176,7 +176,14 @@ BOOL supGetBinaryBuildVersion(
             if (GetFileVersionInfo(lpFileName, 0, dwSize, vinfo)) {
                 bResult = VerQueryValue(vinfo, TEXT("\\"), (LPVOID *)&pFileInfo, (PUINT)&Length);
                 if (bResult) {
-                    *BuildNumber = HIWORD(pFileInfo->dwFileVersionLS);
+                    if (MajorVersion)
+                        *MajorVersion = HIWORD(pFileInfo->dwFileVersionMS);                   
+                    if (MinorVersion)
+                        *MinorVersion = LOWORD(pFileInfo->dwFileVersionMS);
+                    if (Build)
+                        *Build = HIWORD(pFileInfo->dwFileVersionLS);
+                    if (Revision) 
+                        *Revision = LOWORD(pFileInfo->dwFileVersionLS);
                 }
             }
             HeapFree(GetProcessHeap(), 0, vinfo);
@@ -732,5 +739,59 @@ BOOL supRunProcessWithParamsAndWait(
 
     HeapFree(GetProcessHeap(), 0, pszBuffer);
 
+    return bResult;
+}
+
+/*
+* supDisablePeAuthAutoStart
+*
+* Purpose:
+*
+* Change PEAUTH service startup type from Auto to OnDemand.
+*
+*/
+BOOL supDisablePeAuthAutoStart(
+    VOID
+)
+{
+    BOOL bResult = FALSE;
+    DWORD lastError = 0;
+    SC_HANDLE Manager;
+    SC_HANDLE Service;
+
+    Manager = OpenSCManager(
+        NULL,
+        NULL,
+        SC_MANAGER_ALL_ACCESS);
+
+    if (Manager) {
+
+        Service = OpenService(
+            Manager,
+            TEXT("PEAUTH"),
+            SERVICE_CHANGE_CONFIG);
+        if (Service) {
+
+            bResult = ChangeServiceConfig(
+                Service,
+                SERVICE_NO_CHANGE,
+                SERVICE_DEMAND_START,
+                SERVICE_NO_CHANGE,
+                NULL,
+                NULL,
+                NULL,
+                NULL,
+                NULL,
+                NULL,
+                NULL);
+
+            lastError = GetLastError();
+
+            CloseServiceHandle(Service);
+        }
+        CloseServiceHandle(Manager);
+    }
+
+    SetLastError(lastError);
     return bResult;
 }

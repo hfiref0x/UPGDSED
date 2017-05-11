@@ -25,6 +25,18 @@ Source code provided AS-IS in help it will be useful BUT WITHOUT WARRANTY OF ANY
 
 ANY USE OF THE SOFTWARE IS ENTIRELY AT YOUR OWN RISK.
 
+# Install
+
+Run patch.exe elevated.
+
+
+# Uninstall
+
+In elevated command prompt type bcdedit /delete < patch guard disable entry id >
+
+Navigate to Windows\System32 folder and delete ntkrnlmp.exe, osloader.exe (BIOS boot) or osloader.efi (EFI boot)
+
+
 # Build 
 
 UPGDSED comes with full source code.

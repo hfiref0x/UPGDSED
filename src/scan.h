@@ -4,9 +4,9 @@
 *
 *  TITLE:       SCAN.H
 *
-*  VERSION:     1.00
+*  VERSION:     1.10
 *
-*  DATE:        15 Apr 2017
+*  DATE:        10 May 2017
 *
 *  Header file for image scan routine prototypes and definitions.
 *
@@ -75,3 +75,69 @@ typedef BOOL(WINAPI *pfnSymFromAddrW)(
     _In_ DWORD64 Address,
     _Out_opt_ PDWORD64 Displacement,
     _Inout_ PSYMBOL_INFOW Symbol);
+
+typedef BOOL(WINAPI *pfnSymGetSymbolFileW)(
+    _In_opt_ HANDLE hProcess,
+    _In_opt_ PCTSTR SymPath,
+    _In_     PCTSTR ImageFile,
+    _In_     DWORD  Type,
+    _Out_    PTSTR  SymbolFile,
+    _In_     size_t cSymbolFile,
+    _Out_    PTSTR  DbgFile,
+    _In_     size_t cDbgFile);
+
+BOOLEAN QueryKeInitAmd64SpecificStateOffsetSymbols(
+    _In_ ULONG BuildNumber,
+    _In_ PBYTE DllBase,
+    _In_ SIZE_T DllVirtualSize,
+    _In_ IMAGE_NT_HEADERS *NtHeaders,
+    _Inout_ PATCH_CONTEXT *KeInitAmd64SpecificState);
+
+BOOLEAN QueryExpLicenseWatchInitWorkerOffsetSymbols(
+    _In_ ULONG BuildNumber,
+    _In_ PBYTE DllBase,
+    _In_ SIZE_T DllVirtualSize,
+    _In_ IMAGE_NT_HEADERS *NtHeaders,
+    _Inout_ PATCH_CONTEXT *ExpLicenseWatchInitWorker);
+
+BOOLEAN QueryKiFilterFiberContextOffset(
+    _In_ ULONG BuildNumber,
+    _In_ PBYTE DllBase,
+    _In_ SIZE_T DllVirtualSize,
+    _In_ IMAGE_NT_HEADERS *NtHeaders,
+    _Inout_ PATCH_CONTEXT *KiFilterFiberContext);
+
+BOOLEAN QueryCcInitializeBcbProfilerOffsetSymbols(
+    _In_ ULONG BuildNumber,
+    _In_ PBYTE DllBase,
+    _In_ SIZE_T DllVirtualSize,
+    _In_ IMAGE_NT_HEADERS *NtHeaders,
+    _Inout_ PATCH_CONTEXT *CcInitializeBcbProfiler);
+
+BOOLEAN QuerySeValidateImageDataOffsetSymbols(
+    _In_ ULONG BuildNumber,
+    _In_ PBYTE DllBase,
+    _In_ SIZE_T DllVirtualSize,
+    _In_ IMAGE_NT_HEADERS *NtHeaders,
+    _Inout_ PATCH_CONTEXT *SeValidateImageData);
+
+BOOLEAN QuerySepInitializeCodeIntegrityOffsetSymbols(
+    _In_ ULONG BuildNumber,
+    _In_ PBYTE DllBase,
+    _In_ SIZE_T DllVirtualSize,
+    _In_ IMAGE_NT_HEADERS *NtHeaders,
+    _Inout_ PATCH_CONTEXT *SepInitializeCodeIntegrity);
+
+BOOLEAN QueryImgpValidateImageHashOffsetSymbols(
+    _In_ ULONG BuildNumber,
+    _In_ PBYTE DllBase,
+    _In_ SIZE_T DllVirtualSize,
+    _In_ IMAGE_NT_HEADERS *NtHeaders,
+    _Inout_ PATCH_CONTEXT *ImgpValidateImageHash);
+
+BOOLEAN QueryImgpValidateImageHashOffsetSignatures(
+    _In_ ULONG BuildNumber,
+    _In_ PBYTE DllBase,
+    _In_ SIZE_T DllVirtualSize,
+    _In_ IMAGE_NT_HEADERS *NtHeaders,
+    _Inout_ PATCH_CONTEXT *ImgpValidateImageHash);

@@ -4,9 +4,9 @@
 *
 *  TITLE:       MAIN.C
 *
-*  VERSION:     1.00
+*  VERSION:     1.10
 *
-*  DATE:        22 Apr 2017
+*  DATE:        11 May 2017
 *
 * THIS CODE AND INFORMATION IS PROVIDED "AS IS" WITHOUT WARRANTY OF
 * ANY KIND, EITHER EXPRESSED OR IMPLIED, INCLUDING BUT NOT LIMITED
@@ -15,7 +15,6 @@
 *
 *******************************************************************************/
 #include "global.h"
-#include "patterns.h"
 
 fnptr_snwprintf_s _snwprintf_s;
 
@@ -29,454 +28,31 @@ WCHAR       g_szTempDirectory[MAX_PATH + 1];
 WCHAR       g_szSystemDirectory[MAX_PATH + 1];
 WCHAR       g_szDeviceParition[MAX_PATH + 1];
 
-//ntos
+//
+// Ntoskrnl patch points
+//
 
-PATCH_CONTEXT CcInitializeBcbProfiler;
+//dse
 PATCH_CONTEXT SeValidateImageData;
 PATCH_CONTEXT SepInitializeCodeIntegrity;
+
+//pg macro call
+PATCH_CONTEXT CcInitializeBcbProfiler;
+
+//pg initializer
 PATCH_CONTEXT KiFilterFiberContext;
 
-//winload
+//pg initialization points
+PATCH_CONTEXT KeInitAmd64SpecificState; //seh->KiFilterFiberContext
+PATCH_CONTEXT ExpLicenseWatchInitWorker; //pcr->prcb->KiFilterFiberContext
+
+//
+// Winload patch points
+//
+
+//image validation
 PATCH_CONTEXT ImgpValidateImageHash;
 
-/*
-* QuerySeValidateImageDataOffsetSymbols
-*
-* Purpose:
-*
-* Search for SeValidateImageData pattern address inside ntoskrnl.exe.
-* Symbols version, 7601 signatures scan.
-*
-*/
-BOOLEAN QuerySeValidateImageDataOffsetSymbols(
-    _In_ ULONG BuildNumber,
-    _In_ PBYTE DllBase,
-    _In_ SIZE_T DllVirtualSize,
-    _In_ IMAGE_NT_HEADERS *NtHeaders
-)
-{
-    ULONG ScanSize = 0, PatternSize = 0, SkipBytes = 0;
-    ULONG_PTR Address = 0;
-    PVOID Ptr, Pattern = NULL;
-    PVOID ScanPtr = NULL;
-
-    switch (BuildNumber) {
-
-    case 7601:
-
-        //
-        // Windows 7 special case, SeValidateImageData pattern is not unique.
-        // Required code located in PAGE section.
-        //
-
-        ScanPtr = supLookupImageSectionByNameULONG('EGAP', DllBase, &ScanSize);
-        if (ScanPtr) {
-            Pattern = ptSeValidateImageData_7601;
-            PatternSize = sizeof(ptSeValidateImageData_7601);
-            SkipBytes = ptSkipBytesSeValidateImageData_7601;
-        }
-        break;
-
-    case 9200:
-
-        ScanPtr = DllBase;
-        ScanSize = (ULONG)DllVirtualSize;
-        Pattern = ptSeValidateImageData_9200;
-        PatternSize = sizeof(ptSeValidateImageData_9200);
-        SkipBytes = ptSkipBytesSeValidateImageData_9200;
-        break;
-
-    case 9600:
-    case 10240:
-    case 10586:
-    case 14393:
-    case 15063:
-
-        ScanPtr = (PVOID)SymbolAddressFromName(TEXT("SeValidateImageData"));
-        ScanSize = 0x200;
-        Pattern = ptSeValidateImageData_9600_15063;
-        PatternSize = sizeof(ptSeValidateImageData_9600_15063);
-        SkipBytes = ptSkipBytesSeValidateImageData_9600_15063;
-        break;
-
-    default:
-        break;
-    }
-
-    if ((ScanPtr == NULL) || (ScanSize == 0))
-        return FALSE;
-
-    if ((Pattern == NULL) || (PatternSize == 0))
-        return FALSE;
-
-    Address = (ULONG_PTR)FindPattern(
-        ScanPtr,
-        ScanSize,
-        Pattern,
-        PatternSize);
-
-    if (Address != 0) {
-
-        //
-        // Convert to physical offset in file.
-        //
-        Ptr = RtlAddressInSectionTable(NtHeaders, DllBase, (ULONG)(Address - (ULONG_PTR)DllBase));
-        SeValidateImageData.AddressOfPatch = (ULONG_PTR)Ptr - (ULONG_PTR)DllBase;
-
-        //
-        // Skip 'mov' instruction
-        //
-        SeValidateImageData.AddressOfPatch += SkipBytes;
-
-        //
-        // Assign patch data block to be written in patch routine.
-        //
-        SeValidateImageData.PatchData = pdSeValidateImageData;
-        SeValidateImageData.SizeOfPatch = sizeof(pdSeValidateImageData);
-
-    }
-
-    return (Address != 0);
-}
-
-/*
-* QueryCcInitializeBcbProfilerOffsetSymbols
-*
-* Purpose:
-*
-* Search for CcInitializeBcbProfiler pattern address inside ntoskrnl.exe.
-* Symbols version, 7601 signatures scan.
-*
-*/
-BOOLEAN QueryCcInitializeBcbProfilerOffsetSymbols(
-    _In_ ULONG BuildNumber,
-    _In_ PBYTE DllBase,
-    _In_ SIZE_T DllVirtualSize,
-    _In_ IMAGE_NT_HEADERS *NtHeaders
-)
-{
-    ULONG SectionSize;
-    ULONG_PTR Address = 0;
-    PVOID Ptr;
-    PVOID SectionPtr;
-
-    UNREFERENCED_PARAMETER(DllVirtualSize);
-
-    switch (BuildNumber) {
-
-    case 7601:
-        //
-        // Always in INIT section. Not in symbols, query address manually.
-        //
-        SectionPtr = supLookupImageSectionByNameULONG('TINI', DllBase, &SectionSize);
-        if (SectionPtr) {
-
-            Address = (ULONG_PTR)FindPattern(
-                SectionPtr,
-                SectionSize,
-                ptCcInitializeBcbProfiler_7601,
-                sizeof(ptCcInitializeBcbProfiler_7601));
-
-        }
-        break;
-
-    case 9200:
-    case 9600:
-    case 10240:
-    case 10586:
-    case 14393:
-    case 15063:
-
-        Address = (ULONG_PTR)SymbolAddressFromName(TEXT("CcInitializeBcbProfiler"));
-        break;
-
-    default:
-        break;
-    }
-
-    if (Address != 0) {
-
-        //
-        // Convert to physical offset in file.
-        //
-        Ptr = RtlAddressInSectionTable(NtHeaders, DllBase, (ULONG)(Address - (ULONG_PTR)DllBase));
-        CcInitializeBcbProfiler.AddressOfPatch = (ULONG_PTR)Ptr - (ULONG_PTR)DllBase;
-
-        //
-        // Assign patch data block to be written in patch routine.
-        //
-        CcInitializeBcbProfiler.PatchData = pdCcInitializeBcbProfiler;
-        CcInitializeBcbProfiler.SizeOfPatch = sizeof(pdCcInitializeBcbProfiler);
-
-    }
-
-    return (Address != 0);
-}
-
-/*
-* QueryKiFilterFiberContextOffset
-*
-* Purpose:
-*
-* Search for KiFilterFiberContext pattern address inside ntoskrnl.exe.
-* Function main Patch Guard Initialization.
-*
-*/
-BOOLEAN QueryKiFilterFiberContextOffset(
-	_In_ ULONG BuildNumber,
-	_In_ PBYTE DllBase,
-	_In_ SIZE_T DllVirtualSize,
-	_In_ IMAGE_NT_HEADERS *NtHeaders
-)
-{
-	ULONG_PTR Address = 0;
-	PVOID Ptr;
-
-	UNREFERENCED_PARAMETER(DllVirtualSize);
-
-	switch (BuildNumber) {
-
-	case 7601:
-	case 9200:
-	case 9600:
-	case 10240:
-	case 10586:
-	case 14393:
-	case 15063:
-	case 16170:
-
-		Address = (ULONG_PTR)SymbolAddressFromName(TEXT("KiFilterFiberContext"));
-		break;
-
-	default:
-		break;
-	}
-
-	if (Address != 0) {
-
-		//
-		// Convert to physical offset in file.
-		//
-		Ptr = RtlAddressInSectionTable(NtHeaders, DllBase, (ULONG)(Address - (ULONG_PTR)DllBase));
-		KiFilterFiberContext.AddressOfPatch = (ULONG_PTR)Ptr - (ULONG_PTR)DllBase;
-
-		//
-		// Assign patch data block to be written in patch routine.
-		//
-		KiFilterFiberContext.PatchData = pdKiFilterFiberContext;
-		KiFilterFiberContext.SizeOfPatch = sizeof(pdKiFilterFiberContext);
-
-	}
-
-	return (Address != 0);
-}
-
-/*
-* QuerySepInitializeCodeIntegrityOffsetSymbols
-*
-* Purpose:
-*
-* Search for SepInitializeCodeIntegrity pattern address inside ntoskrnl.exe.
-* Symbols version.
-*
-*/
-BOOLEAN QuerySepInitializeCodeIntegrityOffsetSymbols(
-    _In_ ULONG BuildNumber,
-    _In_ PBYTE DllBase,
-    _In_ SIZE_T DllVirtualSize,
-    _In_ IMAGE_NT_HEADERS *NtHeaders
-)
-{
-    ULONG_PTR Address = 0;
-
-    ULONG ScanSize, PatternSize = 0;
-    PVOID ScanPtr, Pattern = NULL, Ptr;
-
-    UNREFERENCED_PARAMETER(DllVirtualSize);
-
-    ScanPtr = (PVOID)SymbolAddressFromName(TEXT("SepInitializeCodeIntegrity"));
-    ScanSize = 0x200;
-
-    switch (BuildNumber) {
-
-    case 7601:
-        Pattern = ptSepInitializeCodeIntegrity_7601;
-        PatternSize = sizeof(ptSepInitializeCodeIntegrity_7601);
-        break;
-
-    case 9200:
-    case 9600:
-    case 10240:
-    case 10586:
-    case 14393:
-        Pattern = ptSepInitializeCodeIntegrity_9200_14393;
-        PatternSize = sizeof(ptSepInitializeCodeIntegrity_9200_14393);
-        break;
-
-    case 15063:
-        Pattern = ptSepInitializeCodeIntegrity_15063;
-        PatternSize = sizeof(ptSepInitializeCodeIntegrity_15063);
-        break;
-
-    default:
-        break;
-    }
-
-    if ((Pattern == NULL) || (PatternSize == 0))
-        return FALSE;
-
-    Address = (ULONG_PTR)FindPattern(
-        ScanPtr,
-        ScanSize,
-        Pattern,
-        PatternSize);
-
-    if (Address != 0) {
-        //
-        // Convert to physical offset in file.
-        //
-        Ptr = RtlAddressInSectionTable(NtHeaders, DllBase, (ULONG)(Address - (ULONG_PTR)DllBase));
-        SepInitializeCodeIntegrity.AddressOfPatch = (ULONG_PTR)Ptr - (ULONG_PTR)DllBase;
-
-        //
-        // Assign patch data block to be written in patch routine.
-        //
-        SepInitializeCodeIntegrity.PatchData = pdSepInitializeCodeIntegrity;
-        SepInitializeCodeIntegrity.SizeOfPatch = sizeof(pdSepInitializeCodeIntegrity);
-    }
-
-    return (Address != 0);
-}
-
-/*
-* QueryImgpValidateImageHashOffsetSymbols
-*
-* Purpose:
-*
-* Search for ImgpValidateImageHash function address inside winload.exe/winload.efi.
-* Symbols version.
-*
-*/
-BOOLEAN QueryImgpValidateImageHashOffsetSymbols(
-    _In_ ULONG BuildNumber,
-    _In_ PBYTE DllBase,
-    _In_ SIZE_T DllVirtualSize,
-    _In_ IMAGE_NT_HEADERS *NtHeaders
-)
-{
-    ULONG_PTR Address = 0;
-    PVOID Ptr;
-
-    UNREFERENCED_PARAMETER(BuildNumber);
-    UNREFERENCED_PARAMETER(DllVirtualSize);
-
-    Address = (ULONG_PTR)SymbolAddressFromName(TEXT("ImgpValidateImageHash"));
-
-    if (Address != 0) {
-
-        //
-        // Convert to physical offset in file.
-        //
-        Ptr = RtlAddressInSectionTable(NtHeaders, DllBase, (ULONG)(Address - (ULONG_PTR)DllBase));
-        ImgpValidateImageHash.AddressOfPatch = (ULONG_PTR)Ptr - (ULONG_PTR)DllBase;
-
-        //
-        // Assign patch data block to be written in patch routine.
-        //
-        ImgpValidateImageHash.PatchData = pdImgpValidateImageHash;
-        ImgpValidateImageHash.SizeOfPatch = sizeof(pdImgpValidateImageHash);
-
-    }
-    return (Address != 0);
-}
-
-/*
-* QueryImgpValidateImageHashOffsetSignatures
-*
-* Purpose:
-*
-* Search for ImgpValidateImageHash function address inside winload.exe/winload.efi.
-* Signature pattern matching version.
-*
-*/
-BOOLEAN QueryImgpValidateImageHashOffsetSignatures(
-    _In_ ULONG BuildNumber,
-    _In_ PBYTE DllBase,
-    _In_ SIZE_T DllVirtualSize,
-    _In_ IMAGE_NT_HEADERS *NtHeaders
-)
-{
-    ULONG_PTR Address = 0;
-    ULONG PatternSize = 0;
-    PVOID Pattern = NULL, Ptr;
-
-    switch (BuildNumber) {
-
-    case 7601:
-        Pattern = ptImgpValidateImageHash_7601;
-        PatternSize = sizeof(ptImgpValidateImageHash_7601);
-        break;
-
-    case 9200:
-        Pattern = ptImgpValidateImageHash_9200;
-        PatternSize = sizeof(ptImgpValidateImageHash_9200);
-        break;
-
-    case 9600:
-        Pattern = ptImgpValidateImageHash_9600;
-        PatternSize = sizeof(ptImgpValidateImageHash_9600);
-        break;
-
-    case 10240:
-        Pattern = ptImgpValidateImageHash_10240;
-        PatternSize = sizeof(ptImgpValidateImageHash_10240);
-        break;
-
-    case 10586:
-        Pattern = ptImgpValidateImageHash_10586;
-        PatternSize = sizeof(ptImgpValidateImageHash_10586);
-        break;
-
-    case 14393:
-        Pattern = ptImgpValidateImageHash_14393;
-        PatternSize = sizeof(ptImgpValidateImageHash_14393);
-        break;
-
-    case 15063:
-        Pattern = ptImgpValidateImageHash_15063;
-        PatternSize = sizeof(ptImgpValidateImageHash_15063);
-        break;
-
-    default:
-        break;
-    }
-
-    if ((Pattern == NULL) || (PatternSize == 0))
-        return FALSE;
-
-    Address = (ULONG_PTR)FindPattern(
-        DllBase,
-        DllVirtualSize,
-        Pattern,
-        PatternSize);
-
-    if (Address != 0) {
-
-        //
-        // Convert to physical offset in file.
-        //
-        Ptr = RtlAddressInSectionTable(NtHeaders, DllBase, (ULONG)(Address - (ULONG_PTR)DllBase));
-        ImgpValidateImageHash.AddressOfPatch = (ULONG_PTR)Ptr - (ULONG_PTR)DllBase;
-
-        //
-        // Assign patch data block to be written in patch routine.
-        //
-        ImgpValidateImageHash.PatchData = pdImgpValidateImageHash;
-        ImgpValidateImageHash.SizeOfPatch = sizeof(pdImgpValidateImageHash);
-
-    }
-    return (Address != 0);
-}
 
 /*
 * ScanNtos
@@ -486,16 +62,19 @@ BOOLEAN QueryImgpValidateImageHashOffsetSignatures(
 * Search for required patterns in ntoskrnl.exe.
 *
 */
-BOOLEAN ScanNtos()
+BOOLEAN ScanNtos(
+    _In_ BOOLEAN DisableFiberContextPatch
+)
 {
     BOOLEAN             bCond = FALSE, bResult = FALSE;
-    ULONG               BuildNumber = 0;
+    ULONG               MajorVersion = 0, MinorVersion = 0, BuildNumber = 0, Revision = 0;
 
     PBYTE               DllBase = NULL;
     SIZE_T              DllVirtualSize;
     IMAGE_NT_HEADERS   *NtHeaders;
 
     WCHAR szBuffer[MAX_PATH * 2];
+    WCHAR szVersion[MAX_PATH];
 
 
     do {
@@ -503,10 +82,30 @@ BOOLEAN ScanNtos()
         _strcpy(szBuffer, g_szTempDirectory);
         _strcat(szBuffer, NTOSKRNMP_EXE);
 
-        if (!supGetBinaryBuildVersion(szBuffer, &BuildNumber)) {
-            supShowError(ERROR_VERSION_PARSE_ERROR, TEXT("Cannot query ntoskrnl build number"));
+        if (!supGetBinaryVersionNumbers(
+            szBuffer,
+            &MajorVersion,
+            &MinorVersion,
+            &BuildNumber,
+            &Revision))
+        {
+            supShowError(ERROR_VERSION_PARSE_ERROR, TEXT("Cannot query ntoskrnl version information"));
             break;
         }
+
+        //
+        // Output ntorknrl version.
+        //
+        RtlSecureZeroMemory(szVersion, sizeof(szVersion));
+
+        _snwprintf_s(szVersion, MAX_PATH, MAX_PATH, L"Patch: Ntoskrnl version: %lu.%lu.%lu.%lu\n",
+            MajorVersion,
+            MinorVersion,
+            BuildNumber,
+            Revision);
+
+        cuiPrintText(g_ConOut, szVersion, g_ConsoleOutput, TRUE);
+
 
         //
         // Map ntos image.
@@ -524,48 +123,118 @@ BOOLEAN ScanNtos()
             //
             // Scan for SeValidateImageData
             //
-            if (!QuerySeValidateImageDataOffsetSymbols(BuildNumber, DllBase, DllVirtualSize, NtHeaders)) {
+            if (!QuerySeValidateImageDataOffsetSymbols(
+                BuildNumber,
+                DllBase,
+                DllVirtualSize,
+                NtHeaders,
+                &SeValidateImageData))
+            {
                 supShowError(ERROR_CAN_NOT_COMPLETE, TEXT("Cannot query SeValidateImageData offset"));
                 break;
             }
 
-            _snwprintf_s(szBuffer, MAX_PATH * 2, MAX_PATH, TEXT("-> SeValidateImageData\t\t%08X"),
+            _snwprintf_s(szBuffer, MAX_PATH * 2, MAX_PATH, TEXT("-> SeValidateImageData\t\t%08llX"),
                 SeValidateImageData.AddressOfPatch);
             cuiPrintText(g_ConOut, szBuffer, g_ConsoleOutput, TRUE);
 
             //
             // Scan for CcInitializeBcbProfiler
             //
-            if (!QueryCcInitializeBcbProfilerOffsetSymbols(BuildNumber, DllBase, DllVirtualSize, NtHeaders)) {
+            if (!QueryCcInitializeBcbProfilerOffsetSymbols(
+                BuildNumber,
+                DllBase,
+                DllVirtualSize,
+                NtHeaders,
+                &CcInitializeBcbProfiler))
+            {
                 supShowError(ERROR_CAN_NOT_COMPLETE, TEXT("Cannot query CcInitializeBcbProfiler offset"));
                 break;
             }
 
-            _snwprintf_s(szBuffer, MAX_PATH * 2, MAX_PATH, TEXT("-> CcInitializeBcbProfiler\t%08X"),
+            _snwprintf_s(szBuffer, MAX_PATH * 2, MAX_PATH, TEXT("-> CcInitializeBcbProfiler\t%08llX"),
                 CcInitializeBcbProfiler.AddressOfPatch);
             cuiPrintText(g_ConOut, szBuffer, g_ConsoleOutput, TRUE);
 
-			//
-			// Scan for KiFilterFiberContext
-			//
-			if (!QueryKiFilterFiberContextOffset(BuildNumber, DllBase, DllVirtualSize, NtHeaders)) {
-				supShowError(ERROR_CAN_NOT_COMPLETE, TEXT("Cannot query KiFilterFiberContext offset"));
-				break;
-			}
+            //
+            // Scan for KiFilterFiberContext
+            // If disabled by command use PG initialization points patch.
+            //
+            if (DisableFiberContextPatch) {
 
-			_snwprintf_s(szBuffer, MAX_PATH * 2, MAX_PATH, TEXT("-> KiFilterFiberContext\t%08X"),
-				KiFilterFiberContext.AddressOfPatch);
-			cuiPrintText(g_ConOut, szBuffer, g_ConsoleOutput, TRUE);
+                //
+                // KiFilterFiberContext patch disabled.
+                // Scan for KeInitAmd64SpecificState
+                //
+                if (!QueryKeInitAmd64SpecificStateOffsetSymbols(
+                    BuildNumber,
+                    DllBase,
+                    DllVirtualSize,
+                    NtHeaders,
+                    &KeInitAmd64SpecificState))
+                {
+                    supShowError(ERROR_CAN_NOT_COMPLETE, TEXT("Cannot query KeInitAmd64SpecificState offset"));
+                    break;
+                }
+
+                _snwprintf_s(szBuffer, MAX_PATH * 2, MAX_PATH, TEXT("-> KeInitAmd64SpecificState\t%08llX"),
+                    KeInitAmd64SpecificState.AddressOfPatch);
+                cuiPrintText(g_ConOut, szBuffer, g_ConsoleOutput, TRUE);
+
+                //
+                // Scan for ExpLicenseWatchInitWorker
+                //
+                if (BuildNumber > 7601) {
+
+                    if (!QueryExpLicenseWatchInitWorkerOffsetSymbols(
+                        BuildNumber,
+                        DllBase,
+                        DllVirtualSize,
+                        NtHeaders,
+                        &ExpLicenseWatchInitWorker))
+                    {
+                        supShowError(ERROR_CAN_NOT_COMPLETE, TEXT("Cannot query ExpLicenseWatchInitWorker offset"));
+                        break;
+                    }
+                    _snwprintf_s(szBuffer, MAX_PATH * 2, MAX_PATH, TEXT("-> ExpLicenseWatchInitWorker\t%08llX"),
+                        ExpLicenseWatchInitWorker.AddressOfPatch);
+                    cuiPrintText(g_ConOut, szBuffer, g_ConsoleOutput, TRUE);
+                }
+
+            }
+            else {
+
+                if (!QueryKiFilterFiberContextOffset(
+                    BuildNumber,
+                    DllBase,
+                    DllVirtualSize,
+                    NtHeaders,
+                    &KiFilterFiberContext))
+                {
+                    supShowError(ERROR_CAN_NOT_COMPLETE, TEXT("Cannot query KiFilterFiberContext offset"));
+                    break;
+                }
+
+                _snwprintf_s(szBuffer, MAX_PATH * 2, MAX_PATH, TEXT("-> KiFilterFiberContext\t\t%08llX"),
+                    KiFilterFiberContext.AddressOfPatch);
+                cuiPrintText(g_ConOut, szBuffer, g_ConsoleOutput, TRUE);
+            }
 
             //
             //Scan for SepInitializeCodeIntegrity
             //
-            if (!QuerySepInitializeCodeIntegrityOffsetSymbols(BuildNumber, DllBase, DllVirtualSize, NtHeaders)) {
+            if (!QuerySepInitializeCodeIntegrityOffsetSymbols(
+                BuildNumber,
+                DllBase,
+                DllVirtualSize,
+                NtHeaders,
+                &SepInitializeCodeIntegrity))
+            {
                 supShowError(ERROR_CAN_NOT_COMPLETE, TEXT("Cannot query SepInitializeCodeIntegrity offset"));
                 break;
             }
 
-            _snwprintf_s(szBuffer, MAX_PATH * 2, MAX_PATH, TEXT("-> SepInitializeCodeIntegrity\t%08X"),
+            _snwprintf_s(szBuffer, MAX_PATH * 2, MAX_PATH, TEXT("-> SepInitializeCodeIntegrity\t%08llX"),
                 SepInitializeCodeIntegrity.AddressOfPatch);
             cuiPrintText(g_ConOut, szBuffer, g_ConsoleOutput, TRUE);
 
@@ -573,7 +242,7 @@ BOOLEAN ScanNtos()
             bResult = TRUE;
         }
         else {
-            supShowError(GetLastError(), TEXT("Cannot load symbols for the ntoslrnl"));
+            supShowError(GetLastError(), TEXT("Cannot load symbols for the ntoskrnl"));
         }
 
     } while (bCond);
@@ -597,13 +266,14 @@ BOOLEAN ScanWinload(
 )
 {
     BOOLEAN             bCond = FALSE, bResult = FALSE;
-    ULONG               BuildNumber = 0;
+    ULONG               MajorVersion = 0, MinorVersion = 0, BuildNumber = 0, Revision = 0;
 
     PBYTE               DllBase = NULL;
     SIZE_T              DllVirtualSize;
     IMAGE_NT_HEADERS   *NtHeaders;
 
     WCHAR szBuffer[MAX_PATH * 2];
+    WCHAR szVersion[MAX_PATH];
 
 
     do {
@@ -616,10 +286,29 @@ BOOLEAN ScanWinload(
             _strcat(szBuffer, OSLOAD_EXE);
         }
 
-        if (!supGetBinaryBuildVersion(szBuffer, &BuildNumber)) {
+        if (!supGetBinaryVersionNumbers(
+            szBuffer,
+            &MajorVersion,
+            &MinorVersion,
+            &BuildNumber,
+            &Revision))
+        {
             supShowError(ERROR_VERSION_PARSE_ERROR, TEXT("Cannot query winload build number"));
             break;
         }
+
+        //
+        // Output winload version.
+        //
+        RtlSecureZeroMemory(szVersion, sizeof(szVersion));
+
+        _snwprintf_s(szVersion, MAX_PATH, MAX_PATH, L"Patch: Winload version: %lu.%lu.%lu.%lu\n",
+            MajorVersion,
+            MinorVersion,
+            BuildNumber,
+            Revision);
+
+        cuiPrintText(g_ConOut, szVersion, g_ConsoleOutput, TRUE);
 
         //
         // Map winload image.
@@ -637,9 +326,16 @@ BOOLEAN ScanWinload(
         //
         if (SymbolsLoadForFile(szBuffer, (DWORD64)DllBase)) {
 
-            if (QueryImgpValidateImageHashOffsetSymbols(BuildNumber, DllBase, DllVirtualSize, NtHeaders)) {
-                _snwprintf_s(szBuffer, MAX_PATH * 2, MAX_PATH, TEXT("-> ImgpValidateImageHash\t%08X"),
+            if (QueryImgpValidateImageHashOffsetSymbols(
+                BuildNumber,
+                DllBase,
+                DllVirtualSize,
+                NtHeaders,
+                &ImgpValidateImageHash))
+            {
+                _snwprintf_s(szBuffer, MAX_PATH * 2, MAX_PATH, TEXT("-> ImgpValidateImageHash\t%08llX"),
                     ImgpValidateImageHash.AddressOfPatch);
+
                 cuiPrintText(g_ConOut, szBuffer, g_ConsoleOutput, TRUE);
                 bResult = TRUE;
             }
@@ -657,7 +353,14 @@ BOOLEAN ScanWinload(
         //
         if (bResult == FALSE) {
             cuiPrintText(g_ConOut, TEXT("Patch: Running signature scan for ImgpValidateImageHash"), g_ConsoleOutput, TRUE);
-            bResult = QueryImgpValidateImageHashOffsetSignatures(BuildNumber, DllBase, DllVirtualSize, NtHeaders);
+
+            bResult = QueryImgpValidateImageHashOffsetSignatures(
+                BuildNumber,
+                DllBase,
+                DllVirtualSize,
+                NtHeaders,
+                &ImgpValidateImageHash);
+
             if (!bResult)
                 supShowError(ERROR_CAN_NOT_COMPLETE, TEXT("Cannot query ImgpValidateImageHash offset using signatures"));
 
@@ -680,11 +383,12 @@ BOOLEAN ScanWinload(
 *
 */
 BOOLEAN ModifyFilesAndMove(
-    VOID
+    _In_ BOOLEAN DisableFiberContextPatch
 )
 {
+    ULONG NumberOfPatches;
     SIZE_T DestLength;
-    ULONG_PTR PatchContext[4];
+    ULONG_PTR PatchContext[MAX_PATCH_COUNT];
     WCHAR szBuffer[MAX_PATH * 2];
     WCHAR szDest[MAX_PATH * 2];
 
@@ -699,12 +403,20 @@ BOOLEAN ModifyFilesAndMove(
     _strcat(szBuffer, NTOSKRNMP_EXE);
     _strcat(szDest, NTOSKRNMP_EXE);
 
-    PatchContext[0] = (ULONG_PTR)&SeValidateImageData;
-    PatchContext[1] = (ULONG_PTR)&CcInitializeBcbProfiler;
-    PatchContext[2] = (ULONG_PTR)&SepInitializeCodeIntegrity;
-	PatchContext[3] = (ULONG_PTR)&KiFilterFiberContext;
+    NumberOfPatches = 0;
+    PatchContext[NumberOfPatches++] = (ULONG_PTR)&SeValidateImageData;
+    PatchContext[NumberOfPatches++] = (ULONG_PTR)&CcInitializeBcbProfiler;
+    PatchContext[NumberOfPatches++] = (ULONG_PTR)&SepInitializeCodeIntegrity;
 
-    if (!supPatchFile(szBuffer, (ULONG_PTR*)&PatchContext, 4))
+    if (DisableFiberContextPatch) {
+        PatchContext[NumberOfPatches++] = (ULONG_PTR)&KeInitAmd64SpecificState;
+        PatchContext[NumberOfPatches++] = (ULONG_PTR)&ExpLicenseWatchInitWorker;
+    }
+    else {
+        PatchContext[NumberOfPatches++] = (ULONG_PTR)&KiFilterFiberContext;
+    }
+
+    if (!supPatchFile(szBuffer, (ULONG_PTR*)&PatchContext, NumberOfPatches))
         return FALSE;
 
     if (!MoveFileEx(szBuffer,
@@ -744,339 +456,6 @@ BOOLEAN ModifyFilesAndMove(
 }
 
 /*
-* DisablePeAuthAutoStart
-*
-* Purpose:
-*
-* Change PEAUTH service startup type from Auto to OnDemand.
-*
-*/
-BOOL DisablePeAuthAutoStart(
-    VOID
-)
-{
-    BOOL bResult = FALSE;
-    DWORD lastError = 0;
-    SC_HANDLE Manager;
-    SC_HANDLE Service;
-
-    Manager = OpenSCManager(
-        NULL,
-        NULL,
-        SC_MANAGER_ALL_ACCESS);
-
-    if (Manager) {
-
-        Service = OpenService(
-            Manager,
-            TEXT("PEAUTH"),
-            SERVICE_CHANGE_CONFIG);
-        if (Service) {
-
-            bResult = ChangeServiceConfig(
-                Service,
-                SERVICE_NO_CHANGE,
-                SERVICE_DEMAND_START,
-                SERVICE_NO_CHANGE,
-                NULL,
-                NULL,
-                NULL,
-                NULL,
-                NULL,
-                NULL,
-                NULL);
-
-            lastError = GetLastError();
-
-            CloseServiceHandle(Service);
-        }
-        CloseServiceHandle(Manager);
-    }
-
-    SetLastError(lastError);
-    return bResult;
-}
-
-#define BCD_ENTRY_GUID TEXT("{71A3C7FC-F751-4982-AEC1-E958357E6813}")
-
-/*
-* SetupBCDEntry
-*
-* Purpose:
-*
-* Create new BCD Entry and write settings to it.
-*
-*/
-BOOLEAN SetupBCDEntry(
-    _In_ ULONG BuildNumber
-)
-{
-    BOOLEAN bCond = FALSE, bResult = FALSE;
-    DWORD ExitCode;
-    SIZE_T Length, CmdLength;
-    WCHAR szCommand[MAX_PATH * 3];
-
-    RtlSecureZeroMemory(szCommand, sizeof(szCommand));
-
-    _snwprintf_s(szCommand,
-        MAX_PATH,
-        MAX_PATH,
-        TEXT("%ws\\%ws "),
-        g_szSystemDirectory,
-        BCDEDIT_EXE);
-
-    Length = _strlen(szCommand);
-    if (Length <= BCDEDIT_LENGTH)
-        return FALSE;
-
-    CmdLength = Length - BCDEDIT_LENGTH;
-
-    cuiPrintText(g_ConOut, TEXT("Patch: Executing BCDEDIT commands"), g_ConsoleOutput, TRUE);
-
-    do {
-
-        //
-        // Set bootmgr option
-        //
-        _strcat(szCommand, TEXT("-set {bootmgr} nointegritychecks 1"));
-        cuiPrintText(g_ConOut, &szCommand[CmdLength], g_ConsoleOutput, TRUE);
-
-        if (!supRunProcessWithParamsAndWait(szCommand, &ExitCode))
-            break;
-
-        if (ExitCode != 0)
-            break;
-
-        //
-        // Create new entry.
-        //
-        szCommand[Length] = 0;
-        _strcat(szCommand, TEXT("-create "));
-        _strcat(szCommand, BCD_ENTRY_GUID);
-        _strcat(szCommand, TEXT(" -d \"Patch Guard Disabled\" -application OSLOADER"));
-        cuiPrintText(g_ConOut, &szCommand[CmdLength], g_ConsoleOutput, TRUE);
-
-        if (!supRunProcessWithParamsAndWait(szCommand, &ExitCode))
-            break;
-
-        if (ExitCode != 0)
-            break;
-
-        //
-        // Set device partition.
-        //
-        szCommand[Length] = 0;
-        _strcat(szCommand, TEXT("-set "));
-        _strcat(szCommand, BCD_ENTRY_GUID);
-        _strcat(szCommand, TEXT(" device partition="));
-        _strcat(szCommand, g_szDeviceParition);
-        cuiPrintText(g_ConOut, &szCommand[CmdLength], g_ConsoleOutput, TRUE);
-
-        if (!supRunProcessWithParamsAndWait(szCommand, &ExitCode))
-            break;
-
-        if (ExitCode != 0)
-            break;
-
-        //
-        // Set osdevice partition.
-        //
-        szCommand[Length] = 0;
-        _strcat(szCommand, TEXT("-set "));
-        _strcat(szCommand, BCD_ENTRY_GUID);
-        _strcat(szCommand, TEXT(" osdevice partition="));
-        _strcat(szCommand, g_szDeviceParition);
-        cuiPrintText(g_ConOut, &szCommand[CmdLength], g_ConsoleOutput, TRUE);
-
-        if (!supRunProcessWithParamsAndWait(szCommand, &ExitCode))
-            break;
-
-        if (ExitCode != 0)
-            break;
-
-        //
-        // Set systemroot.
-        //
-        szCommand[Length] = 0;
-        _strcat(szCommand, TEXT("-set "));
-        _strcat(szCommand, BCD_ENTRY_GUID);
-        _strcat(szCommand, TEXT(" systemroot \\Windows"));
-        cuiPrintText(g_ConOut, &szCommand[CmdLength], g_ConsoleOutput, TRUE);
-
-        if (!supRunProcessWithParamsAndWait(szCommand, &ExitCode))
-            break;
-
-        if (ExitCode != 0)
-            break;
-
-        //
-        // Set osloader path.
-        //
-        szCommand[Length] = 0;
-        _strcat(szCommand, TEXT("-set "));
-        _strcat(szCommand, BCD_ENTRY_GUID);
-        _strcat(szCommand, TEXT(" path \\Windows\\system32\\"));
-
-        if (g_IsEFI) {
-            _strcat(szCommand, OSLOAD_EFI);
-        }
-        else {
-            _strcat(szCommand, OSLOAD_EXE);
-        }
-        cuiPrintText(g_ConOut, &szCommand[CmdLength], g_ConsoleOutput, TRUE);
-
-        if (!supRunProcessWithParamsAndWait(szCommand, &ExitCode))
-            break;
-
-        if (ExitCode != 0)
-            break;
-
-        //
-        // Set kernel.
-        //
-        szCommand[Length] = 0;
-        _strcat(szCommand, TEXT("-set "));
-        _strcat(szCommand, BCD_ENTRY_GUID);
-        _strcat(szCommand, TEXT(" kernel "));
-        _strcat(szCommand, NTOSKRNMP_EXE);
-        cuiPrintText(g_ConOut, &szCommand[CmdLength], g_ConsoleOutput, TRUE);
-
-        if (!supRunProcessWithParamsAndWait(szCommand, &ExitCode))
-            break;
-
-        if (ExitCode != 0)
-            break;
-
-        //
-        // Set recoveryenabled.
-        //
-        szCommand[Length] = 0;
-        _strcat(szCommand, TEXT("-set "));
-        _strcat(szCommand, BCD_ENTRY_GUID);
-        _strcat(szCommand, TEXT(" recoveryenabled 0"));
-        cuiPrintText(g_ConOut, &szCommand[CmdLength], g_ConsoleOutput, TRUE);
-
-        if (!supRunProcessWithParamsAndWait(szCommand, &ExitCode))
-            break;
-
-        if (ExitCode != 0)
-            break;
-
-        //
-        // Set Nx.
-        //
-        szCommand[Length] = 0;
-        _strcat(szCommand, TEXT("-set "));
-        _strcat(szCommand, BCD_ENTRY_GUID);
-        _strcat(szCommand, TEXT(" nx OptIn"));
-        cuiPrintText(g_ConOut, &szCommand[CmdLength], g_ConsoleOutput, TRUE);
-
-        if (!supRunProcessWithParamsAndWait(szCommand, &ExitCode))
-            break;
-
-        if (ExitCode != 0)
-            break;
-
-        //
-        // Set nointegritychecks.
-        //
-        szCommand[Length] = 0;
-        _strcat(szCommand, TEXT("-set "));
-        _strcat(szCommand, BCD_ENTRY_GUID);
-        _strcat(szCommand, TEXT(" nointegritychecks 1"));
-        cuiPrintText(g_ConOut, &szCommand[CmdLength], g_ConsoleOutput, TRUE);
-
-        if (!supRunProcessWithParamsAndWait(szCommand, &ExitCode))
-            break;
-
-        if (ExitCode != 0)
-            break;
-
-        //
-        // Set inherit bootloader settings.
-        //
-        szCommand[Length] = 0;
-        _strcat(szCommand, TEXT("-set "));
-        _strcat(szCommand, BCD_ENTRY_GUID);
-        _strcat(szCommand, TEXT(" inherit {bootloadersettings}"));
-        cuiPrintText(g_ConOut, &szCommand[CmdLength], g_ConsoleOutput, TRUE);
-
-        if (!supRunProcessWithParamsAndWait(szCommand, &ExitCode))
-            break;
-
-        if (ExitCode != 0)
-            break;
-
-        //
-        // Set display order.
-        //
-        szCommand[Length] = 0;
-        _strcat(szCommand, TEXT("-displayorder "));
-        _strcat(szCommand, BCD_ENTRY_GUID);
-        _strcat(szCommand, TEXT(" -addlast"));
-        cuiPrintText(g_ConOut, &szCommand[CmdLength], g_ConsoleOutput, TRUE);
-
-        if (!supRunProcessWithParamsAndWait(szCommand, &ExitCode))
-            break;
-
-        if (ExitCode != 0)
-            break;
-
-        //
-        // Set timeout.
-        //
-        szCommand[Length] = 0;
-        _strcat(szCommand, TEXT("-timeout 10"));
-        cuiPrintText(g_ConOut, &szCommand[CmdLength], g_ConsoleOutput, TRUE);
-
-        if (!supRunProcessWithParamsAndWait(szCommand, &ExitCode))
-            break;
-
-        if (ExitCode != 0)
-            break;
-
-        //
-        // Set bootmenupolicy to Legacy for everything above Windows 7 SP1
-        //
-        if (BuildNumber > 7601) {
-            szCommand[Length] = 0;
-            _strcat(szCommand, TEXT("-set bootmenupolicy legacy"));
-            cuiPrintText(g_ConOut, &szCommand[CmdLength], g_ConsoleOutput, TRUE);
-            if (!supRunProcessWithParamsAndWait(szCommand, &ExitCode))
-                break;
-
-            if (ExitCode != 0)
-                break;
-        }
-
-        //
-        // Disable PEAUTH autostart.
-        //
-        cuiPrintText(g_ConOut,
-            TEXT("Patch: Setting PeAuth service to manual start"),
-            g_ConsoleOutput,
-            TRUE);
-
-        if (!DisablePeAuthAutoStart()) {
-            supShowError(GetLastError(),
-                TEXT("Could not set PeAuth service to manual start"));
-        }
-        else {
-            cuiPrintText(g_ConOut,
-                TEXT("Patch: PeAuth service set to manual start"),
-                g_ConsoleOutput,
-                TRUE);
-        }
-
-        bResult = TRUE;
-
-    } while (bCond);
-
-
-    return bResult;
-}
-
-/*
 * PatchMain
 *
 * Purpose:
@@ -1086,8 +465,10 @@ BOOLEAN SetupBCDEntry(
 */
 UINT PatchMain()
 {
+    BOOL AlreadyInstalled = FALSE;
     BOOLEAN bCond = FALSE;
     BOOLEAN bEnabled = FALSE;
+    BOOLEAN DisableFiberContextPatch = FALSE;
     DWORD l = 0;
     FIRMWARE_TYPE FirmwareType;
     OSVERSIONINFO osver;
@@ -1096,6 +477,7 @@ UINT PatchMain()
 
     WCHAR szBuffer[MAX_PATH * 2];
 
+    RtlSecureZeroMemory(&osver, sizeof(osver));
     osver.dwOSVersionInfoSize = sizeof(osver);
     RtlGetVersion(&osver);
 
@@ -1122,6 +504,31 @@ UINT PatchMain()
 
         cuiClrScr(g_ConOut);
         cuiPrintText(g_ConOut, PROGRAMFULLNAME, g_ConsoleOutput, TRUE);
+
+        //
+        // Check if patch already installed.
+        //
+        if (BcdPatchEntryAlreadyExist(BCD_PATCH_ENTRY_GUID, &AlreadyInstalled)) {
+
+            if (AlreadyInstalled) {
+                cuiPrintText(g_ConOut,
+                    TEXT("Patch: Boot entry already present, remove it to run this patch again if needed."),
+                    g_ConsoleOutput,
+                    TRUE);
+
+                break;
+            }
+        }
+
+        //
+        // Query optional command.
+        // Disable KiFilterFiberContext patch and use instead two PG initialization points patch.
+        // Required for tests.
+        //
+        l = 0;
+        RtlSecureZeroMemory(szBuffer, sizeof(szBuffer));
+        GetCommandLineParam(GetCommandLine(), 1, (LPWSTR)&szBuffer, MAX_PATH * sizeof(WCHAR), &l);
+        DisableFiberContextPatch = (_strcmpi(szBuffer, TEXT("-nf")) == 0);
 
         //
         // Warn user.
@@ -1269,7 +676,7 @@ UINT PatchMain()
         // Scan ntoskrnl for patch patterns.
         //
         cuiPrintText(g_ConOut, TEXT("Patch: Scanning ntoskrnl for patterns\n"), g_ConsoleOutput, TRUE);
-        if (!ScanNtos()) {
+        if (!ScanNtos(DisableFiberContextPatch)) {
             cuiPrintText(g_ConOut, TEXT("Patch: Cannot locate patch offsets for ntoskrnl."), g_ConsoleOutput, TRUE);
             break;
         }
@@ -1292,7 +699,7 @@ UINT PatchMain()
         //
         // Modify files and move them to %systemroot%\system32.
         //
-        if (!ModifyFilesAndMove()) {
+        if (!ModifyFilesAndMove(DisableFiberContextPatch)) {
             supShowError(GetLastError(), TEXT("\nModifyFilesAndMove failed"));
             break;
         }
@@ -1303,17 +710,17 @@ UINT PatchMain()
         //
         // Setup new BCD entry.
         //
-        if (!SetupBCDEntry(osver.dwBuildNumber)) {
-            supShowError(GetLastError(), TEXT("\nSetupBCDEntry failed"));
+        if (!BcdCreatePatchEntry(osver.dwBuildNumber)) {
+            supShowError(GetLastError(), TEXT("\nBcdCreatePatchEntry failed"));
             break;
         }
         else {
-            cuiPrintText(g_ConOut, TEXT("\nPatch: SetupBCDEntry succeed"), g_ConsoleOutput, TRUE);
+            cuiPrintText(g_ConOut, TEXT("\nPatch: BcdCreatePatchEntry succeed"), g_ConsoleOutput, TRUE);
         }
 
     } while (bCond);
 
-    cuiPrintText(g_ConOut, TEXT("Patch: Press any key to exit"), g_ConsoleOutput, TRUE);
+    cuiPrintText(g_ConOut, TEXT("Patch: Press Enter to exit"), g_ConsoleOutput, TRUE);
 
     RtlSecureZeroMemory(&inp1, sizeof(inp1));
     ReadConsoleInput(g_ConIn, &inp1, 1, &l);

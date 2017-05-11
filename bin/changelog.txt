@@ -1,0 +1,11 @@
+Changes since v1.0.0 release
+
+
+v1.1.0 May 11, 2017
+Added command line switch -nf
+
+- This switch will tell program to use PatchGuard initialization points patch instead of PatchGuard initialization routine patch. With this switch program will modify KeInitAdm64SpecificState (calls KiFilterFiberContext via SEH), ExpLicenseWatchInitWorker (calls KiFilterFiberContext by pointer from PCR->PRCB.HalReserved[0]
+
+Added check if patched boot entry already exist
+
+- If patched boot entry already exist then program will warn user and cancel it execution. You need manually remove this entry to use patch again. Run cmd elevated, type bcdedit, locate patched entry guid, delete it with bcdedit /delete <guid>

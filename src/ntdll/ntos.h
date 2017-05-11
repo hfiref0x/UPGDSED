@@ -4,9 +4,9 @@
 *
 *  TITLE:       NTOS.H
 *
-*  VERSION:     1.65
+*  VERSION:     1.67
 *
-*  DATE:        05 Apr 2017
+*  DATE:        10 May 2017
 *
 *  Common header file for the ntos API functions and definitions.
 *
@@ -1140,6 +1140,37 @@ typedef struct _OBJECT_HANDLE_FLAG_INFORMATION
 #endif
 /*
 ** Objects END
+*/
+
+/*
+** Boot Entry START
+*/
+
+typedef struct _FILE_PATH {
+    ULONG Version;
+    ULONG Length;
+    ULONG Type;
+    UCHAR FilePath[ANYSIZE_ARRAY];
+} FILE_PATH, *PFILE_PATH;
+
+typedef struct _BOOT_ENTRY {
+    ULONG Version;
+    ULONG Length;
+    ULONG Id;
+    ULONG Attributes;
+    ULONG FriendlyNameOffset;
+    ULONG BootFilePathOffset;
+    ULONG OsOptionsLength;
+    UCHAR OsOptions[ANYSIZE_ARRAY];
+} BOOT_ENTRY, *PBOOT_ENTRY;
+
+typedef struct _BOOT_ENTRY_LIST {
+    ULONG NextEntryOffset;
+    BOOT_ENTRY BootEntry;
+} BOOT_ENTRY_LIST, *PBOOT_ENTRY_LIST;
+
+/*
+** Boot Entry END
 */
 
 /*
@@ -4405,7 +4436,7 @@ NTSTATUS NTAPI LdrResSearchResource(
     _In_        ULONG ResIdCount,
     _In_        ULONG Flags,
     _Out_       LPVOID *Resource,
-    _Out_       ULONG *Size,
+    _Out_       ULONG_PTR *Size,
     _In_opt_    USHORT *FoundLanguage,
     _In_opt_    ULONG *FoundLanguageLength
     );
@@ -4602,7 +4633,7 @@ BOOLEAN NTAPI RtlCreateUnicodeString(
 
 VOID NTAPI RtlInitUnicodeString(
 	_Inout_	PUNICODE_STRING DestinationString,
-	_In_	PCWSTR SourceString
+    _In_opt_ PCWSTR SourceString
 	);
 
 BOOLEAN NTAPI RtlEqualUnicodeString(
@@ -6177,34 +6208,29 @@ NTSTATUS NTAPI NtAcceptConnectPort(
 	_In_			PPORT_MESSAGE ConnectionRequest,
 	_In_			BOOLEAN AcceptConnection,
 	_Inout_opt_		PPORT_VIEW ServerView,
-	_Out_opt_		PREMOTE_PORT_VIEW ClientView
-	);
+	_Out_opt_		PREMOTE_PORT_VIEW ClientView);
 
 typedef
 VOID
 (*PPS_APC_ROUTINE) (
 	_In_opt_ PVOID ApcArgument1,
 	_In_opt_ PVOID ApcArgument2,
-	_In_opt_ PVOID ApcArgument3
-	);
+	_In_opt_ PVOID ApcArgument3);
 
 NTSTATUS NTAPI NtQueueApcThread(
 	_In_ HANDLE ThreadHandle,
 	_In_ PPS_APC_ROUTINE ApcRoutine,
 	_In_opt_ PVOID ApcArgument1,
 	_In_opt_ PVOID ApcArgument2,
-	_In_opt_ PVOID ApcArgument3
-	);
+	_In_opt_ PVOID ApcArgument3);
 
 NTSTATUS NTAPI NtWaitForSingleObject(
 	_In_ HANDLE Handle,
 	_In_ BOOLEAN Alertable,
-	_In_opt_ PLARGE_INTEGER Timeout
-	);
+	_In_opt_ PLARGE_INTEGER Timeout);
 
 NTSTATUS NTAPI NtYieldExecution(
-    VOID
-    );
+    VOID);
 
 NTSTATUS NTAPI NtCreateMailslotFile(
     _Out_ PHANDLE FileHandle,
@@ -6214,8 +6240,7 @@ NTSTATUS NTAPI NtCreateMailslotFile(
     _In_ ULONG CreateOptions,
     _In_ ULONG MailslotQuota,
     _In_ ULONG MaximumMessageSize,
-    _In_ PLARGE_INTEGER ReadTimeout
-);
+    _In_ PLARGE_INTEGER ReadTimeout);
 
 NTSTATUS NTAPI NtSecureConnectPort(
     _Out_ PHANDLE PortHandle,
@@ -6226,5 +6251,9 @@ NTSTATUS NTAPI NtSecureConnectPort(
     _Inout_opt_ PREMOTE_PORT_VIEW ServerView,
     _Out_opt_ PULONG MaxMessageLength,
     _Inout_opt_ PVOID ConnectionInformation,
-    _Inout_opt_ PULONG ConnectionInformationLength
-);
+    _Inout_opt_ PULONG ConnectionInformationLength);
+
+NTSTATUS NTAPI NtEnumerateBootEntries(
+    _Out_ PVOID Buffer,
+    _Inout_ PULONG BufferLength);
+

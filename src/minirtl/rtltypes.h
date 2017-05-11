@@ -14,30 +14,30 @@ typedef __w64 unsigned int   size_t;
 
 __forceinline char locase_a(char c)
 {
-	if ((c >= 'A') && (c <= 'Z'))
-		return c + 0x20;
-	else
-		return c;
+    if ((c >= 'A') && (c <= 'Z'))
+        return c + 0x20;
+    else
+        return c;
 }
 
 __forceinline wchar_t locase_w(wchar_t c)
 {
-	if ((c >= 'A') && (c <= 'Z'))
-		return c + 0x20;
-	else
-		return c;
+    if ((c >= 'A') && (c <= 'Z'))
+        return c + 0x20;
+    else
+        return c;
 }
 
 __forceinline char byteabs(char x) {
-	if (x < 0)
-		return -x;
-	return x;
+    if (x < 0)
+        return -x;
+    return x;
 }
 
 __forceinline int _isdigit_a(char x) {
-	return ((x >= '0') && (x <= '9'));
+    return ((x >= '0') && (x <= '9'));
 }
 
 __forceinline int _isdigit_w(wchar_t x) {
-	return ((x >= L'0') && (x <= L'9'));
+    return ((x >= L'0') && (x <= L'9'));
 }

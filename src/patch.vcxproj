@@ -107,8 +107,10 @@
     </ResourceCompile>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="bcd.c" />
     <ClCompile Include="cui\cui.c" />
     <ClCompile Include="main.c" />
+    <ClCompile Include="minirtl\cmdline.c" />
     <ClCompile Include="minirtl\_filename.c" />
     <ClCompile Include="minirtl\_strcat.c" />
     <ClCompile Include="minirtl\_strcmp.c" />
@@ -117,13 +119,16 @@
     <ClCompile Include="minirtl\_strend.c" />
     <ClCompile Include="minirtl\_strlen.c" />
     <ClCompile Include="minirtl\_strncmp.c" />
+    <ClCompile Include="minirtl\_strncmpi.c" />
     <ClCompile Include="minirtl\_strncpy.c" />
     <ClCompile Include="scan.c" />
     <ClCompile Include="sup.c" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="bcd.h" />
     <ClInclude Include="cui\cui.h" />
     <ClInclude Include="global.h" />
+    <ClInclude Include="minirtl\cmdline.h" />
     <ClInclude Include="minirtl\minirtl.h" />
     <ClInclude Include="minirtl\rtltypes.h" />
     <ClInclude Include="minirtl\_filename.h" />

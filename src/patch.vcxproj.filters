@@ -57,6 +57,15 @@
     <ClCompile Include="scan.c">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="minirtl\cmdline.c">
+      <Filter>minirtl</Filter>
+    </ClCompile>
+    <ClCompile Include="bcd.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="minirtl\_strncmpi.c">
+      <Filter>minirtl</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="ntdll\ntos.h">
@@ -87,6 +96,12 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="resource.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="minirtl\cmdline.h">
+      <Filter>minirtl</Filter>
+    </ClInclude>
+    <ClInclude Include="bcd.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
