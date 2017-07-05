@@ -1,5 +1,7 @@
 Changes since v1.0.0 release
 
+hotfix from July 05, 2017
+addressing issue #5
 
 v1.1.1 June 28, 2017
 command -nf removed and now has default effect
