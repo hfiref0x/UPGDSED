@@ -4,9 +4,9 @@
 *
 *  TITLE:       BCD.C
 *
-*  VERSION:     1.10
+*  VERSION:     1.11
 *
-*  DATE:        11 May 2017
+*  DATE:        28 June 2017
 *
 *  Boot Configuration Data related routines.
 *
@@ -404,14 +404,20 @@ BOOL BcdPatchEntryAlreadyExist(
                     //
                     // Conversion error, wrong key.
                     //
-                    if (tmp == ULONG_MAX)
+                    if (tmp == ULONG_MAX) {
+                        SubIndex++;
+                        cSubKeys--;
                         continue;
+                    }
 
                     //
                     // Check if this key is system store.
                     //
-                    if (!NT_SUCCESS(BcdIsSystemStore(hKey, kbi->Name, &IsSystemStore)))
+                    if (!NT_SUCCESS(BcdIsSystemStore(hKey, kbi->Name, &IsSystemStore))) {
+                        SubIndex++;
+                        cSubKeys--;
                         continue;
+                    }
 
                     if (IsSystemStore) {
 
@@ -482,19 +488,20 @@ BOOL BcdCreatePatchEntry(
 
         //
         // Set bootmgr option
+        // Commented for bitlocker compatibility.
         //
-        _strcat(szCommand, TEXT("-set {bootmgr} nointegritychecks 1"));
+       /* _strcat(szCommand, TEXT("-set {bootmgr} nointegritychecks 1"));
         cuiPrintText(g_ConOut, &szCommand[CmdLength], g_ConsoleOutput, TRUE);
 
         if (!supRunProcessWithParamsAndWait(szCommand, &ExitCode))
             break;
 
         if (ExitCode != 0)
-            break;
+            break;*/
 
-        //
-        // Create new entry.
-        //
+            //
+            // Create new entry.
+            //
         szCommand[Length] = 0;
         _strcat(szCommand, TEXT("-create "));
         _strcat(szCommand, BCD_PATCH_ENTRY_GUID);
@@ -623,7 +630,7 @@ BOOL BcdCreatePatchEntry(
             break;
 
         //
-        // Set nointegritychecks.
+        // Set nointegritychecks for our GUID entry.
         //
         szCommand[Length] = 0;
         _strcat(szCommand, TEXT("-set "));

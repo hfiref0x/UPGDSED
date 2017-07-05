@@ -4,9 +4,9 @@
 *
 *  TITLE:       MAIN.C
 *
-*  VERSION:     1.10
+*  VERSION:     1.11
 *
-*  DATE:        11 May 2017
+*  DATE:        28 June 2017
 *
 * THIS CODE AND INFORMATION IS PROVIDED "AS IS" WITHOUT WARRANTY OF
 * ANY KIND, EITHER EXPRESSED OR IMPLIED, INCLUDING BUT NOT LIMITED
@@ -63,7 +63,7 @@ PATCH_CONTEXT ImgpValidateImageHash;
 *
 */
 BOOLEAN ScanNtos(
-    _In_ BOOLEAN DisableFiberContextPatch
+    _In_ BOOLEAN EnableFiberContextPatch
 )
 {
     BOOLEAN             bCond = FALSE, bResult = FALSE;
@@ -79,8 +79,19 @@ BOOLEAN ScanNtos(
 
     do {
 
+
+#ifndef _DEBUG
         _strcpy(szBuffer, g_szTempDirectory);
         _strcat(szBuffer, NTOSKRNMP_EXE);
+#else 
+        //_strcpy(szBuffer, L"D:\\dumps\\pgos\\6.1.7601.23418\\ntoskrnl.exe");
+        //_strcpy(szBuffer, L"D:\\dumps\\pgos\\6.2.9200.16384\\ntoskrnl.exe");
+        _strcpy(szBuffer, L"D:\\dumps\\pgos\\6.3.9600.18589\\ntoskrnl.exe");
+        //_strcpy(szBuffer, L"D:\\dumps\\pgos\\10.0.10240.16384\\ntoskrnl.exe");
+        //_strcpy(szBuffer, L"D:\\dumps\\pgos\\10.0.10586.0\\ntoskrnl.exe");
+        //_strcpy(szBuffer, L"D:\\dumps\\pgos\\10.0.14393.0\\ntoskrnl.exe");
+        //_strcpy(szBuffer, L"D:\\dumps\\pgos\\10.0.15063.0\\ntoskrnl.exe");
+#endif
 
         if (!supGetBinaryVersionNumbers(
             szBuffer,
@@ -157,10 +168,27 @@ BOOLEAN ScanNtos(
             cuiPrintText(g_ConOut, szBuffer, g_ConsoleOutput, TRUE);
 
             //
-            // Scan for KiFilterFiberContext
-            // If disabled by command use PG initialization points patch.
+            // Scan for KiFilterFiberContext if enabled by command.
             //
-            if (DisableFiberContextPatch) {
+            if (EnableFiberContextPatch) {
+
+                if (!QueryKiFilterFiberContextOffset(
+                    BuildNumber,
+                    DllBase,
+                    DllVirtualSize,
+                    NtHeaders,
+                    &KiFilterFiberContext))
+                {
+                    supShowError(ERROR_CAN_NOT_COMPLETE, TEXT("Cannot query KiFilterFiberContext offset"));
+                    break;
+                }
+
+                _snwprintf_s(szBuffer, MAX_PATH * 2, MAX_PATH, TEXT("-> KiFilterFiberContext\t\t%08llX"),
+                    KiFilterFiberContext.AddressOfPatch);
+                cuiPrintText(g_ConOut, szBuffer, g_ConsoleOutput, TRUE);
+
+            }
+            else {
 
                 //
                 // KiFilterFiberContext patch disabled.
@@ -201,23 +229,6 @@ BOOLEAN ScanNtos(
                     cuiPrintText(g_ConOut, szBuffer, g_ConsoleOutput, TRUE);
                 }
 
-            }
-            else {
-
-                if (!QueryKiFilterFiberContextOffset(
-                    BuildNumber,
-                    DllBase,
-                    DllVirtualSize,
-                    NtHeaders,
-                    &KiFilterFiberContext))
-                {
-                    supShowError(ERROR_CAN_NOT_COMPLETE, TEXT("Cannot query KiFilterFiberContext offset"));
-                    break;
-                }
-
-                _snwprintf_s(szBuffer, MAX_PATH * 2, MAX_PATH, TEXT("-> KiFilterFiberContext\t\t%08llX"),
-                    KiFilterFiberContext.AddressOfPatch);
-                cuiPrintText(g_ConOut, szBuffer, g_ConsoleOutput, TRUE);
             }
 
             //
@@ -383,7 +394,7 @@ BOOLEAN ScanWinload(
 *
 */
 BOOLEAN ModifyFilesAndMove(
-    _In_ BOOLEAN DisableFiberContextPatch
+    _In_ BOOLEAN EnableFiberContextPatch
 )
 {
     ULONG NumberOfPatches;
@@ -408,12 +419,12 @@ BOOLEAN ModifyFilesAndMove(
     PatchContext[NumberOfPatches++] = (ULONG_PTR)&CcInitializeBcbProfiler;
     PatchContext[NumberOfPatches++] = (ULONG_PTR)&SepInitializeCodeIntegrity;
 
-    if (DisableFiberContextPatch) {
-        PatchContext[NumberOfPatches++] = (ULONG_PTR)&KeInitAmd64SpecificState;
-        PatchContext[NumberOfPatches++] = (ULONG_PTR)&ExpLicenseWatchInitWorker;
+    if (EnableFiberContextPatch) {
+        PatchContext[NumberOfPatches++] = (ULONG_PTR)&KiFilterFiberContext;
     }
     else {
-        PatchContext[NumberOfPatches++] = (ULONG_PTR)&KiFilterFiberContext;
+        PatchContext[NumberOfPatches++] = (ULONG_PTR)&KeInitAmd64SpecificState;
+        PatchContext[NumberOfPatches++] = (ULONG_PTR)&ExpLicenseWatchInitWorker;
     }
 
     if (!supPatchFile(szBuffer, (ULONG_PTR*)&PatchContext, NumberOfPatches))
@@ -468,7 +479,7 @@ UINT PatchMain()
     BOOL AlreadyInstalled = FALSE;
     BOOLEAN bCond = FALSE;
     BOOLEAN bEnabled = FALSE;
-    BOOLEAN DisableFiberContextPatch = FALSE;
+    BOOLEAN EnableFiberContextPatch = FALSE;
     DWORD l = 0;
     FIRMWARE_TYPE FirmwareType;
     OSVERSIONINFO osver;
@@ -522,13 +533,13 @@ UINT PatchMain()
 
         //
         // Query optional command.
-        // Disable KiFilterFiberContext patch and use instead two PG initialization points patch.
+        // Enable KiFilterFiberContext patch and don't use instead two PG initialization points patch.
         // Required for tests.
         //
         l = 0;
         RtlSecureZeroMemory(szBuffer, sizeof(szBuffer));
         GetCommandLineParam(GetCommandLine(), 1, (LPWSTR)&szBuffer, MAX_PATH * sizeof(WCHAR), &l);
-        DisableFiberContextPatch = (_strcmpi(szBuffer, TEXT("-nf")) == 0);
+        EnableFiberContextPatch = (_strcmpi(szBuffer, TEXT("-pf")) == 0);
 
         //
         // Warn user.
@@ -676,7 +687,7 @@ UINT PatchMain()
         // Scan ntoskrnl for patch patterns.
         //
         cuiPrintText(g_ConOut, TEXT("Patch: Scanning ntoskrnl for patterns\n"), g_ConsoleOutput, TRUE);
-        if (!ScanNtos(DisableFiberContextPatch)) {
+        if (!ScanNtos(EnableFiberContextPatch)) {
             cuiPrintText(g_ConOut, TEXT("Patch: Cannot locate patch offsets for ntoskrnl."), g_ConsoleOutput, TRUE);
             break;
         }
@@ -699,7 +710,7 @@ UINT PatchMain()
         //
         // Modify files and move them to %systemroot%\system32.
         //
-        if (!ModifyFilesAndMove(DisableFiberContextPatch)) {
+        if (!ModifyFilesAndMove(EnableFiberContextPatch)) {
             supShowError(GetLastError(), TEXT("\nModifyFilesAndMove failed"));
             break;
         }

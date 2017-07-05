@@ -1,6 +1,11 @@
 Changes since v1.0.0 release
 
 
+v1.1.1 June 28, 2017
+command -nf removed and now has default effect
+added command -pf to patch only fibercontext (for tests)
+fixed infinite loop while scanning for existing bcd entry if application failed to open bcd store
+
 v1.1.0 May 11, 2017
 Added command line switch -nf
 

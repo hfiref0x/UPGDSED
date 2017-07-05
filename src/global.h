@@ -5,9 +5,9 @@
 *
 *  TITLE:       GLOBAL.H
 *
-*  VERSION:     1.10
+*  VERSION:     1.11
 *
-*  DATE:        11 May 2017
+*  DATE:        28 June 2017
 *
 *  Common header file for the project.
 *
@@ -69,7 +69,7 @@
 
 #define CONTINUE_CMD    L"CONTINUE"
 
-#define PROGRAMTITLE    L"UPGDSED v1.1.0"
+#define PROGRAMTITLE    L"UPGDSED v1.1.1"
 #define PROGRAMFULLNAME L"Universal PatchGuard and Driver Signature Enforcement Disable"
 
 #define MAX_PATCH_COUNT 10
