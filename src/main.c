@@ -4,9 +4,9 @@
 *
 *  TITLE:       MAIN.C
 *
-*  VERSION:     1.11
+*  VERSION:     1.12
 *
-*  DATE:        05 July 2017
+*  DATE:        28 July 2017
 *
 * THIS CODE AND INFORMATION IS PROVIDED "AS IS" WITHOUT WARRANTY OF
 * ANY KIND, EITHER EXPRESSED OR IMPLIED, INCLUDING BUT NOT LIMITED
@@ -522,8 +522,15 @@ UINT PatchMain()
         if (BcdPatchEntryAlreadyExist(BCD_PATCH_ENTRY_GUID, &AlreadyInstalled)) {
 
             if (AlreadyInstalled) {
+                
+                RtlSecureZeroMemory(szBuffer, sizeof(szBuffer));
+                _strcpy(szBuffer, TEXT("Patch: Boot entry already present, remove it to run this patch again if needed.\n\r"));
+                _strcat(szBuffer, TEXT("Removal: Launch elevated command prompt and use the following command ->\n\r"));
+                _strcat(szBuffer, TEXT("bcdedit /delete "));
+                _strcat(szBuffer, BCD_PATCH_ENTRY_GUID);
+
                 cuiPrintText(g_ConOut,
-                    TEXT("Patch: Boot entry already present, remove it to run this patch again if needed."),
+                    szBuffer,
                     g_ConsoleOutput,
                     TRUE);
 
