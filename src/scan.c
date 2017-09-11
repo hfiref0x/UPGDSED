@@ -226,8 +226,9 @@ BOOL SymbolsLoadForFile(
 {
     BOOL bCond = FALSE, bResult = FALSE;
     HANDLE hSym = GetCurrentProcess();
-    WCHAR szFullSymbolInfo[MAX_PATH * 2];
+    WCHAR szFullSymbolInfo[MAX_PATH * 3];
     WCHAR szSymbolName[MAX_PATH];
+    WCHAR szSymbolsDirectory[MAX_PATH * 2];
 
     do {
         SymbolsFreeList();
@@ -240,16 +241,19 @@ BOOL SymbolsLoadForFile(
             SYMOPT_EXACT_SYMBOLS);
 
         RtlSecureZeroMemory(&g_SymbolsHead, sizeof(g_SymbolsHead));
-        RtlSecureZeroMemory(szSymbolName, sizeof(szSymbolName));
-        if (GetModuleFileName(NULL, szSymbolName, MAX_PATH) == 0)
-            break;
 
-        _strcpy(szFullSymbolInfo, TEXT("SRV*"));
-        _filepath(szSymbolName, _strend_w(szFullSymbolInfo));
-        _strcat(szFullSymbolInfo, TEXT("Symbols"));
-        if (!CreateDirectory(&szFullSymbolInfo[4], NULL))
+        //
+        // Create symbols store subdirectory in the %temp% directory.
+        //
+        RtlSecureZeroMemory(&szSymbolsDirectory, sizeof(szSymbolsDirectory));
+        _strcpy(szSymbolsDirectory, g_szTempDirectory);
+        _strcat(szSymbolsDirectory, TEXT("Symbols"));
+        if (!CreateDirectory(szSymbolsDirectory, NULL))
             if (GetLastError() != ERROR_ALREADY_EXISTS)
                 break;
+
+        _strcpy(szFullSymbolInfo, TEXT("SRV*"));
+        _strcat(szFullSymbolInfo, szSymbolsDirectory);
 
         _strcat(szFullSymbolInfo, TEXT("*https://msdl.microsoft.com/download/symbols"));
         if (!pSymInitializeW(hSym, szFullSymbolInfo, FALSE))
