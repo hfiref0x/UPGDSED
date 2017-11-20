@@ -4,9 +4,9 @@
 *
 *  TITLE:       SCAN.H
 *
-*  VERSION:     1.10
+*  VERSION:     1.20
 *
-*  DATE:        10 May 2017
+*  DATE:        19 Oct 2017
 *
 *  Header file for image scan routine prototypes and definitions.
 *
@@ -86,14 +86,14 @@ typedef BOOL(WINAPI *pfnSymGetSymbolFileW)(
     _Out_    PTSTR  DbgFile,
     _In_     size_t cDbgFile);
 
-BOOLEAN QueryKeInitAmd64SpecificStateOffsetSymbols(
+BOOLEAN QueryKeInitAmd64SpecificStateOffset(
     _In_ ULONG BuildNumber,
     _In_ PBYTE DllBase,
     _In_ SIZE_T DllVirtualSize,
     _In_ IMAGE_NT_HEADERS *NtHeaders,
     _Inout_ PATCH_CONTEXT *KeInitAmd64SpecificState);
 
-BOOLEAN QueryExpLicenseWatchInitWorkerOffsetSymbols(
+BOOLEAN QueryExpLicenseWatchInitWorkerOffset(
     _In_ ULONG BuildNumber,
     _In_ PBYTE DllBase,
     _In_ SIZE_T DllVirtualSize,
@@ -107,21 +107,21 @@ BOOLEAN QueryKiFilterFiberContextOffset(
     _In_ IMAGE_NT_HEADERS *NtHeaders,
     _Inout_ PATCH_CONTEXT *KiFilterFiberContext);
 
-BOOLEAN QueryCcInitializeBcbProfilerOffsetSymbols(
+BOOLEAN QueryCcInitializeBcbProfilerOffset(
     _In_ ULONG BuildNumber,
     _In_ PBYTE DllBase,
     _In_ SIZE_T DllVirtualSize,
     _In_ IMAGE_NT_HEADERS *NtHeaders,
     _Inout_ PATCH_CONTEXT *CcInitializeBcbProfiler);
 
-BOOLEAN QuerySeValidateImageDataOffsetSymbols(
+BOOLEAN QuerySeValidateImageDataOffset(
     _In_ ULONG BuildNumber,
     _In_ PBYTE DllBase,
     _In_ SIZE_T DllVirtualSize,
     _In_ IMAGE_NT_HEADERS *NtHeaders,
     _Inout_ PATCH_CONTEXT *SeValidateImageData);
 
-BOOLEAN QuerySepInitializeCodeIntegrityOffsetSymbols(
+BOOLEAN QuerySepInitializeCodeIntegrityOffset(
     _In_ ULONG BuildNumber,
     _In_ PBYTE DllBase,
     _In_ SIZE_T DllVirtualSize,

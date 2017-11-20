@@ -4,9 +4,9 @@
 *
 *  TITLE:       SUP.H
 *
-*  VERSION:     1.10
+*  VERSION:     1.20
 *
-*  DATE:        10 May 2017
+*  DATE:        20 Oct 2017
 *
 *  Common header file for the program support routines.
 *
@@ -71,5 +71,9 @@ BOOL supRunProcessWithParamsAndWait(
 
 BOOL supDisablePeAuthAutoStart(
     VOID);
+
+BOOL supQueryNtBuildNumber(
+    _Inout_ PULONG BuildNumber
+    );
 
 #define PathFileExists(lpszPath) (GetFileAttributes(lpszPath) != (DWORD)-1)
