@@ -105,6 +105,9 @@
     <ResourceCompile>
       <ShowProgress>true</ShowProgress>
     </ResourceCompile>
+    <Manifest>
+      <AdditionalManifestFiles>pgos.manifest</AdditionalManifestFiles>
+    </Manifest>
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="bcd.c" />

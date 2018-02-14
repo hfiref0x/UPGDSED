@@ -4,9 +4,9 @@
 *
 *  TITLE:       SCAN.C
 *
-*  VERSION:     1.10
+*  VERSION:     1.20
 *
-*  DATE:        10 May 2017
+*  DATE:        18 Oct 2017
 *
 * THIS CODE AND INFORMATION IS PROVIDED "AS IS" WITHOUT WARRANTY OF
 * ANY KIND, EITHER EXPRESSED OR IMPLIED, INCLUDING BUT NOT LIMITED
@@ -125,20 +125,23 @@ VOID SymbolAddToList(
     sz = (1 + _strlen(SymbolName)) * sizeof(WCHAR);
 
     Entry->Next = HeapAlloc(GetProcessHeap(), HEAP_ZERO_MEMORY, sizeof(SYMBOL_ENTRY));
-    if (Entry->Next == NULL)
-        return;
+    if (Entry->Next) {
 
-    Entry = Entry->Next;
-    Entry->Next = NULL;
+        Entry = Entry->Next;
+        Entry->Next = NULL;
 
-    Entry->Name = HeapAlloc(GetProcessHeap(), HEAP_ZERO_MEMORY, sz);
-    if (Entry->Name == NULL) {
-        HeapFree(GetProcessHeap(), 0, Entry->Next);
-        return;
+        Entry->Name = HeapAlloc(GetProcessHeap(), HEAP_ZERO_MEMORY, sz);
+        if (Entry->Name) {
+
+            _strncpy(Entry->Name, sz / sizeof(WCHAR),
+                SymbolName, sz / sizeof(WCHAR));
+
+            Entry->Address = lpAddress;
+        }
+        else {
+            HeapFree(GetProcessHeap(), 0, Entry);
+        }
     }
-
-    _strncpy(Entry->Name, sz / sizeof(WCHAR), SymbolName, sz / sizeof(WCHAR));
-    Entry->Address = lpAddress;
 }
 
 /*
@@ -339,15 +342,14 @@ PVOID FindPattern(
 //
 
 /*
-* QueryKeInitAmd64SpecificStateOffsetSymbols
+* QueryKeInitAmd64SpecificStateOffset
 *
 * Purpose:
 *
 * Search for KeInitAmd64SpecificState pattern address inside ntoskrnl.exe.
-* Symbols version.
 *
 */
-BOOLEAN QueryKeInitAmd64SpecificStateOffsetSymbols(
+BOOLEAN QueryKeInitAmd64SpecificStateOffset(
     _In_ ULONG BuildNumber,
     _In_ PBYTE DllBase,
     _In_ SIZE_T DllVirtualSize,
@@ -355,26 +357,53 @@ BOOLEAN QueryKeInitAmd64SpecificStateOffsetSymbols(
     _Inout_ PATCH_CONTEXT *KeInitAmd64SpecificState
 )
 {
+    ULONG ScanSize = 0, PatternSize = 0;
     ULONG_PTR Address = 0;
-    PVOID Ptr;
+    PVOID Ptr, ScanPtr = NULL, Pattern = NULL;
 
     UNREFERENCED_PARAMETER(DllVirtualSize);
 
-    switch (BuildNumber) {
+    Address = (ULONG_PTR)SymbolAddressFromName(TEXT("KeInitAmd64SpecificState"));
+    if (Address == 0) {
+        //
+        // Symbols failed, switch to signatures.
+        // Locate INIT section first.
+        //
+        ScanPtr = supLookupImageSectionByNameULONG('TINI', DllBase, &ScanSize);
+        if (ScanPtr) {
 
-    case 7601:
-    case 9200:
-    case 9600:
-    case 10240:
-    case 10586:
-    case 14393:
-    case 15063:
+            switch (BuildNumber) {
 
-        Address = (ULONG_PTR)SymbolAddressFromName(TEXT("KeInitAmd64SpecificState"));
-        break;
+            case 7601:
+                Pattern = ptKeInitAmd64SpecificState_7601;
+                PatternSize = sizeof(ptKeInitAmd64SpecificState_7601);
+                break;
 
-    default:
-        break;
+            case 9200:
+            case 9600:
+            case 10240:
+            case 10586:
+            case 14393:
+            case 15063:
+            case 16299:
+                Pattern = ptKeInitAmd64SpecificState_9200_16299;
+                PatternSize = sizeof(ptKeInitAmd64SpecificState_9200_16299);
+                break;
+
+            default:
+                break;
+            }
+
+            if ((Pattern == NULL) || (PatternSize == 0))
+                return FALSE;
+
+            Address = (ULONG_PTR)FindPattern(
+                ScanPtr,
+                ScanSize,
+                Pattern,
+                PatternSize);
+
+        }
     }
 
     if (Address != 0) {
@@ -397,15 +426,14 @@ BOOLEAN QueryKeInitAmd64SpecificStateOffsetSymbols(
 }
 
 /*
-* QueryExpLicenseWatchInitWorkerOffsetSymbols
+* QueryExpLicenseWatchInitWorkerOffset
 *
 * Purpose:
 *
 * Search for ExpLicenseWatchInitWorker pattern address inside ntoskrnl.exe.
-* Symbols version.
 *
 */
-BOOLEAN QueryExpLicenseWatchInitWorkerOffsetSymbols(
+BOOLEAN QueryExpLicenseWatchInitWorkerOffset(
     _In_ ULONG BuildNumber,
     _In_ PBYTE DllBase,
     _In_ SIZE_T DllVirtualSize,
@@ -413,25 +441,53 @@ BOOLEAN QueryExpLicenseWatchInitWorkerOffsetSymbols(
     _Inout_ PATCH_CONTEXT *ExpLicenseWatchInitWorker
 )
 {
+    ULONG ScanSize = 0, PatternSize = 0;
     ULONG_PTR Address = 0;
-    PVOID Ptr;
+    PVOID Ptr, ScanPtr = NULL, Pattern = NULL;
 
     UNREFERENCED_PARAMETER(DllVirtualSize);
 
-    switch (BuildNumber) {
+    Address = (ULONG_PTR)SymbolAddressFromName(TEXT("ExpLicenseWatchInitWorker"));
+    if (Address == 0) {
 
-    case 9200:
-    case 9600:
-    case 10240:
-    case 10586:
-    case 14393:
-    case 15063:
+        //
+        // Symbols failed, switch to signatures.
+        // Locate INIT section first.
+        //
+        ScanPtr = supLookupImageSectionByNameULONG('TINI', DllBase, &ScanSize);
+        if (ScanPtr) {
 
-        Address = (ULONG_PTR)SymbolAddressFromName(TEXT("ExpLicenseWatchInitWorker"));
-        break;
+            switch (BuildNumber) {
 
-    default:
-        break;
+            case 9200:
+            case 15063:
+                Pattern = ptExpLicenseWatchInitWorker1;
+                PatternSize = sizeof(ptExpLicenseWatchInitWorker1);
+                break;
+
+            case 9600:
+            case 10240:
+            case 10586:
+            case 14393:
+            case 16299:
+                Pattern = ptExpLicenseWatchInitWorker2;
+                PatternSize = sizeof(ptExpLicenseWatchInitWorker2);
+                break;
+
+            default:
+                break;
+            }
+
+            if ((Pattern == NULL) || (PatternSize == 0))
+                return FALSE;
+
+            Address = (ULONG_PTR)FindPattern(
+                ScanPtr,
+                ScanSize,
+                Pattern,
+                PatternSize);
+
+        }
     }
 
     if (Address != 0) {
@@ -470,26 +526,69 @@ BOOLEAN QueryKiFilterFiberContextOffset(
     _Inout_ PATCH_CONTEXT *KiFilterFiberContext
 )
 {
+    ULONG ScanSize = 0, PatternSize = 0;
     ULONG_PTR Address = 0;
-    PVOID Ptr;
+    PVOID Ptr, ScanPtr = NULL, Pattern = NULL;
 
     UNREFERENCED_PARAMETER(DllVirtualSize);
 
-    switch (BuildNumber) {
+    Address = (ULONG_PTR)SymbolAddressFromName(TEXT("KiFilterFiberContext"));
+    if (Address == 0) {
+        //
+        // Symbols failed, switch to signatures.
+        // Locate INIT section first.
+        //
+        ScanPtr = supLookupImageSectionByNameULONG('TINI', DllBase, &ScanSize);
+        if (ScanPtr) {
 
-    case 7601:
-    case 9200:
-    case 9600:
-    case 10240:
-    case 10586:
-    case 14393:
-    case 15063:
+            switch (BuildNumber) {
 
-        Address = (ULONG_PTR)SymbolAddressFromName(TEXT("KiFilterFiberContext"));
-        break;
+            case 7601:
+                Pattern = ptKiFilterFiberContext_7601;
+                PatternSize = sizeof(ptKiFilterFiberContext_7601);
+                break;
 
-    default:
-        break;
+            case 9200:
+                Pattern = ptKiFilterFiberContext_9200;
+                PatternSize = sizeof(ptKiFilterFiberContext_9200);
+                break;
+
+            case 9600:
+                Pattern = ptKiFilterFiberContext_9600;
+                PatternSize = sizeof(ptKiFilterFiberContext_9600);
+                break;
+
+            case 10240:
+            case 10586:
+                Pattern = ptKiFilterFiberContext_10240_10586;
+                PatternSize = sizeof(ptKiFilterFiberContext_10240_10586);
+                break;
+
+            case 14393:
+            case 15063:
+                Pattern = ptKiFilterFiberContext_14393_15063;
+                PatternSize = sizeof(ptKiFilterFiberContext_14393_15063);
+                break;
+
+            case 16299:
+                Pattern = ptKiFilterFiberContext_16299;
+                PatternSize = sizeof(ptKiFilterFiberContext_16299);
+                break;
+
+            default:
+                break;
+            }
+
+            if ((Pattern == NULL) || (PatternSize == 0))
+                return FALSE;
+
+            Address = (ULONG_PTR)FindPattern(
+                ScanPtr,
+                ScanSize,
+                Pattern,
+                PatternSize);
+
+        }
     }
 
     if (Address != 0) {
@@ -512,15 +611,14 @@ BOOLEAN QueryKiFilterFiberContextOffset(
 }
 
 /*
-* QueryCcInitializeBcbProfilerOffsetSymbols
+* QueryCcInitializeBcbProfilerOffset
 *
 * Purpose:
 *
 * Search for CcInitializeBcbProfiler pattern address inside ntoskrnl.exe.
-* Symbols version, 7601 signatures scan.
 *
 */
-BOOLEAN QueryCcInitializeBcbProfilerOffsetSymbols(
+BOOLEAN QueryCcInitializeBcbProfilerOffset(
     _In_ ULONG BuildNumber,
     _In_ PBYTE DllBase,
     _In_ SIZE_T DllVirtualSize,
@@ -528,43 +626,88 @@ BOOLEAN QueryCcInitializeBcbProfilerOffsetSymbols(
     _Inout_ PATCH_CONTEXT *CcInitializeBcbProfiler
 )
 {
-    ULONG SectionSize;
+    BOOL bSymbolsFailed = FALSE;
+    ULONG ScanSize = 0, PatternSize = 0;
     ULONG_PTR Address = 0;
-    PVOID Ptr;
-    PVOID SectionPtr;
+    PVOID Ptr, ScanPtr = NULL, Pattern = NULL;
 
     UNREFERENCED_PARAMETER(DllVirtualSize);
 
-    switch (BuildNumber) {
-
-    case 7601:
+    if (BuildNumber == 7601) {
         //
         // Always in INIT section. Not in symbols, query address manually.
         //
-        SectionPtr = supLookupImageSectionByNameULONG('TINI', DllBase, &SectionSize);
-        if (SectionPtr) {
+        ScanPtr = supLookupImageSectionByNameULONG('TINI', DllBase, &ScanSize);
+        if (ScanPtr) {
 
             Address = (ULONG_PTR)FindPattern(
-                SectionPtr,
-                SectionSize,
+                ScanPtr,
+                ScanSize,
                 ptCcInitializeBcbProfiler_7601,
                 sizeof(ptCcInitializeBcbProfiler_7601));
 
         }
-        break;
 
-    case 9200:
-    case 9600:
-    case 10240:
-    case 10586:
-    case 14393:
-    case 15063:
+    }
+    else {
 
         Address = (ULONG_PTR)SymbolAddressFromName(TEXT("CcInitializeBcbProfiler"));
-        break;
 
-    default:
-        break;
+        //
+        // In case of symbols failure switch to signatures.
+        //       
+        if (Address == 0) {
+            bSymbolsFailed = TRUE;
+        }
+
+    }
+
+    //
+    // In case if we cannot use symbols - query address by signature scan over INIT section.
+    //
+    if (bSymbolsFailed) {
+
+        //
+        // Always in INIT section.
+        //
+        ScanPtr = supLookupImageSectionByNameULONG('TINI', DllBase, &ScanSize);
+        if (ScanPtr) {
+
+            switch (BuildNumber) {
+
+            case 9200:
+                PatternSize = sizeof(ptCcInitializeBcbProfiler_9200);
+                Pattern = ptCcInitializeBcbProfiler_9200;
+                break;
+
+            case 9600:
+                PatternSize = sizeof(ptCcInitializeBcbProfiler_9600);
+                Pattern = ptCcInitializeBcbProfiler_9600;
+                break;
+
+            case 10240:
+            case 10586:
+            case 14393:
+            case 15063:
+            case 16299:
+                PatternSize = sizeof(ptCcInitializeBcbProfiler_10240_16299);
+                Pattern = ptCcInitializeBcbProfiler_10240_16299;
+                break;
+
+            default:
+                break;
+            }
+
+            if ((Pattern == NULL) || (PatternSize == 0))
+                return FALSE;
+
+            Address = (ULONG_PTR)FindPattern(
+                ScanPtr,
+                ScanSize,
+                Pattern,
+                PatternSize);
+
+        }
     }
 
     if (Address != 0) {
@@ -592,15 +735,15 @@ BOOLEAN QueryCcInitializeBcbProfilerOffsetSymbols(
 
 
 /*
-* QuerySeValidateImageDataOffsetSymbols
+* QuerySeValidateImageDataOffset
 *
 * Purpose:
 *
 * Search for SeValidateImageData pattern address inside ntoskrnl.exe.
-* Symbols version, 7601 signatures scan.
+* In case of symbols failure routine will use signatures scan.
 *
 */
-BOOLEAN QuerySeValidateImageDataOffsetSymbols(
+BOOLEAN QuerySeValidateImageDataOffset(
     _In_ ULONG BuildNumber,
     _In_ PBYTE DllBase,
     _In_ SIZE_T DllVirtualSize,
@@ -608,6 +751,7 @@ BOOLEAN QuerySeValidateImageDataOffsetSymbols(
     _Inout_ PATCH_CONTEXT *SeValidateImageData
 )
 {
+    BOOL bSymbolsFailed = FALSE;
     ULONG ScanSize = 0, PatternSize = 0, SkipBytes = 0;
     ULONG_PTR Address = 0;
     PVOID Ptr, Pattern = NULL;
@@ -644,12 +788,25 @@ BOOLEAN QuerySeValidateImageDataOffsetSymbols(
     case 10586:
     case 14393:
     case 15063:
+    case 16299:
+
+        Pattern = ptSeValidateImageData_9600_16299;
+        PatternSize = sizeof(ptSeValidateImageData_9600_16299);
 
         ScanPtr = (PVOID)SymbolAddressFromName(TEXT("SeValidateImageData"));
-        ScanSize = 0x200;
-        Pattern = ptSeValidateImageData_9600_15063;
-        PatternSize = sizeof(ptSeValidateImageData_9600_15063);
-        SkipBytes = ptSkipBytesSeValidateImageData_9600_15063;
+
+        //
+        // If symbols failed for some reason, set PAGE section as scan base.
+        //
+        if (ScanPtr == NULL) {
+            ScanPtr = supLookupImageSectionByNameULONG('EGAP', DllBase, &ScanSize);
+            bSymbolsFailed = TRUE;
+        }
+        else {
+            ScanSize = 0x200;
+        }
+
+        SkipBytes = ptSkipBytesSeValidateImageData_9600_16299;
         break;
 
     default:
@@ -658,6 +815,33 @@ BOOLEAN QuerySeValidateImageDataOffsetSymbols(
 
     if ((ScanPtr == NULL) || (ScanSize == 0))
         return FALSE;
+
+    //
+    // Symbols failed for some reason, switch to signature scan.
+    //
+    if (bSymbolsFailed) {
+
+        switch (BuildNumber) {
+
+        case 9600:
+        case 10240:
+        case 10586:
+        case 14393:
+            Pattern = ptSeValidateImageData_2_9600_14393;
+            PatternSize = sizeof(ptSeValidateImageData_2_9600_14393);
+            break;
+
+        case 15063:
+        case 16299:
+            Pattern = ptSeValidateImageData_2_15063_16299;
+            PatternSize = sizeof(ptSeValidateImageData_2_15063_16299);
+            break;
+
+        default:
+            break;
+
+        }
+    }
 
     if ((Pattern == NULL) || (PatternSize == 0))
         return FALSE;
@@ -693,15 +877,14 @@ BOOLEAN QuerySeValidateImageDataOffsetSymbols(
 }
 
 /*
-* QuerySepInitializeCodeIntegrityOffsetSymbols
+* QuerySepInitializeCodeIntegrityOffset
 *
 * Purpose:
 *
 * Search for SepInitializeCodeIntegrity pattern address inside ntoskrnl.exe.
-* Symbols version.
 *
 */
-BOOLEAN QuerySepInitializeCodeIntegrityOffsetSymbols(
+BOOLEAN QuerySepInitializeCodeIntegrityOffset(
     _In_ ULONG BuildNumber,
     _In_ PBYTE DllBase,
     _In_ SIZE_T DllVirtualSize,
@@ -711,13 +894,79 @@ BOOLEAN QuerySepInitializeCodeIntegrityOffsetSymbols(
 {
     ULONG_PTR Address = 0;
 
-    ULONG ScanSize, PatternSize = 0;
-    PVOID ScanPtr, Pattern = NULL, Ptr;
+    ULONG ScanSize, PatternSize = 0, SectionSize = 0;
+    PVOID ScanPtr, Pattern = NULL, Ptr, SectionPtr = NULL;
 
     UNREFERENCED_PARAMETER(DllVirtualSize);
 
+    //
+    // Locate function pointer.
+    //
     ScanPtr = (PVOID)SymbolAddressFromName(TEXT("SepInitializeCodeIntegrity"));
+    if (ScanPtr == NULL) {
+        //
+        // Symbol unavailable, switch to signature scan.
+        //
+        SectionPtr = supLookupImageSectionByNameULONG('EGAP', DllBase, &SectionSize);
+        if (SectionPtr) {
+
+            switch (BuildNumber) {
+
+            case 7601:
+                Pattern = ptSepInitializeCodeIntegrity2_7601;
+                PatternSize = sizeof(ptSepInitializeCodeIntegrity2_7601);
+                break;
+
+            case 9200:
+            case 9600:
+                Pattern = ptSepInitializeCodeIntegrity2_9200_9600;
+                PatternSize = sizeof(ptSepInitializeCodeIntegrity2_9200_9600);
+                break;
+
+            case 10240:
+            case 10586:
+                Pattern = ptSepInitializeCodeIntegrity2_10240_10586;
+                PatternSize = sizeof(ptSepInitializeCodeIntegrity2_10240_10586);
+                break;
+
+            case 14393:
+                Pattern = ptSepInitializeCodeIntegrity2_14393;
+                PatternSize = sizeof(ptSepInitializeCodeIntegrity2_14393);
+                break;
+
+            case 15063:
+                Pattern = ptSepInitializeCodeIntegrity2_15063;
+                PatternSize = sizeof(ptSepInitializeCodeIntegrity2_15063);
+                break;
+
+            case 16299:
+                Pattern = ptSepInitializeCodeIntegrity2_16299;
+                PatternSize = sizeof(ptSepInitializeCodeIntegrity2_16299);
+                break;
+
+            default:
+                break;
+            }
+
+            if ((Pattern == NULL) || (PatternSize == 0))
+                return FALSE;
+
+            ScanPtr = FindPattern(
+                SectionPtr,
+                SectionSize,
+                Pattern,
+                PatternSize);
+
+        }
+
+    }
+
+    //
+    // Scan for specific place inside found fuction.
+    //
     ScanSize = 0x200;
+    Pattern = NULL;
+    PatternSize = 0;
 
     switch (BuildNumber) {
 
@@ -738,6 +987,11 @@ BOOLEAN QuerySepInitializeCodeIntegrityOffsetSymbols(
     case 15063:
         Pattern = ptSepInitializeCodeIntegrity_15063;
         PatternSize = sizeof(ptSepInitializeCodeIntegrity_15063);
+        break;
+
+    case 16299:
+        Pattern = ptSepInitializeCodeIntegrity_16299;
+        PatternSize = sizeof(ptSepInitializeCodeIntegrity_16299);
         break;
 
     default:
@@ -869,6 +1123,11 @@ BOOLEAN QueryImgpValidateImageHashOffsetSignatures(
     case 15063:
         Pattern = ptImgpValidateImageHash_15063;
         PatternSize = sizeof(ptImgpValidateImageHash_15063);
+        break;
+
+    case 16299:
+        Pattern = ptImgpValidateImageHash_16299;
+        PatternSize = sizeof(ptImgpValidateImageHash_16299);
         break;
 
     default:

@@ -5,9 +5,9 @@
 *
 *  TITLE:       GLOBAL.H
 *
-*  VERSION:     1.13
+*  VERSION:     1.20
 *
-*  DATE:        11 Sept 2017
+*  DATE:        18 Oct 2017
 *
 *  Common header file for the project.
 *
@@ -69,13 +69,13 @@
 
 #define CONTINUE_CMD    L"CONTINUE"
 
-#define PROGRAMTITLE    L"UPGDSED v1.1.3"
+#define PROGRAMTITLE    L"UPGDSED v1.2.0"
 #define PROGRAMFULLNAME L"Universal PatchGuard and Driver Signature Enforcement Disable"
 
 #define MAX_PATCH_COUNT 10
 
 #define MIN_SUPPORTED_NT_BUILD 7601  //Windows 7 SP1
-#define MAX_SUPPORTED_NT_BUILD 15063 //Windows 10 RS2
+#define MAX_SUPPORTED_NT_BUILD 16299 //Windows 10 RS3
 
 typedef struct _PATCH_CONTEXT {
     ULONG_PTR AddressOfPatch;
