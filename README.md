@@ -11,7 +11,7 @@ x64 Windows, supported versions:
 * Windows 7 SP1
 * Windows 8
 * Windows 8.1
-* Windows 10 (TH1/TH2/RS1/RS2)
+* Windows 10 (TH1/TH2/RS1/RS2/RS3)
 
 Administrative privilege is required.
 
@@ -55,4 +55,4 @@ In order to build from source you need Microsoft Visual Studio 2015 and later ve
 * EP_X0FF, https://github.com/hfiref0x
 * Fyyre,   http://fyyre.ru
 
-(c) 2017 UPGDSED Project
+(c) 2017 - 2018 UPGDSED Project

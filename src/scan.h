@@ -1,12 +1,12 @@
 /*******************************************************************************
 *
-*  (C) COPYRIGHT AUTHORS, 2017
+*  (C) COPYRIGHT AUTHORS, 2017 - 2018
 *
 *  TITLE:       SCAN.H
 *
-*  VERSION:     1.20
+*  VERSION:     1.21
 *
-*  DATE:        19 Oct 2017
+*  DATE:        29 Mar 2018
 *
 *  Header file for image scan routine prototypes and definitions.
 *
@@ -88,6 +88,7 @@ typedef BOOL(WINAPI *pfnSymGetSymbolFileW)(
 
 BOOLEAN QueryKeInitAmd64SpecificStateOffset(
     _In_ ULONG BuildNumber,
+    _In_ ULONG Revision,
     _In_ PBYTE DllBase,
     _In_ SIZE_T DllVirtualSize,
     _In_ IMAGE_NT_HEADERS *NtHeaders,
@@ -95,6 +96,7 @@ BOOLEAN QueryKeInitAmd64SpecificStateOffset(
 
 BOOLEAN QueryExpLicenseWatchInitWorkerOffset(
     _In_ ULONG BuildNumber,
+    _In_ ULONG Revision,
     _In_ PBYTE DllBase,
     _In_ SIZE_T DllVirtualSize,
     _In_ IMAGE_NT_HEADERS *NtHeaders,
@@ -102,6 +104,7 @@ BOOLEAN QueryExpLicenseWatchInitWorkerOffset(
 
 BOOLEAN QueryKiFilterFiberContextOffset(
     _In_ ULONG BuildNumber,
+    _In_ ULONG Revision,
     _In_ PBYTE DllBase,
     _In_ SIZE_T DllVirtualSize,
     _In_ IMAGE_NT_HEADERS *NtHeaders,
@@ -109,6 +112,7 @@ BOOLEAN QueryKiFilterFiberContextOffset(
 
 BOOLEAN QueryCcInitializeBcbProfilerOffset(
     _In_ ULONG BuildNumber,
+    _In_ ULONG Revision,
     _In_ PBYTE DllBase,
     _In_ SIZE_T DllVirtualSize,
     _In_ IMAGE_NT_HEADERS *NtHeaders,
@@ -116,6 +120,7 @@ BOOLEAN QueryCcInitializeBcbProfilerOffset(
 
 BOOLEAN QuerySeValidateImageDataOffset(
     _In_ ULONG BuildNumber,
+    _In_ ULONG Revision,
     _In_ PBYTE DllBase,
     _In_ SIZE_T DllVirtualSize,
     _In_ IMAGE_NT_HEADERS *NtHeaders,
@@ -123,20 +128,20 @@ BOOLEAN QuerySeValidateImageDataOffset(
 
 BOOLEAN QuerySepInitializeCodeIntegrityOffset(
     _In_ ULONG BuildNumber,
+    _In_ ULONG Revision,
     _In_ PBYTE DllBase,
     _In_ SIZE_T DllVirtualSize,
     _In_ IMAGE_NT_HEADERS *NtHeaders,
     _Inout_ PATCH_CONTEXT *SepInitializeCodeIntegrity);
 
 BOOLEAN QueryImgpValidateImageHashOffsetSymbols(
-    _In_ ULONG BuildNumber,
     _In_ PBYTE DllBase,
-    _In_ SIZE_T DllVirtualSize,
     _In_ IMAGE_NT_HEADERS *NtHeaders,
     _Inout_ PATCH_CONTEXT *ImgpValidateImageHash);
 
 BOOLEAN QueryImgpValidateImageHashOffsetSignatures(
     _In_ ULONG BuildNumber,
+    _In_ ULONG Revision,
     _In_ PBYTE DllBase,
     _In_ SIZE_T DllVirtualSize,
     _In_ IMAGE_NT_HEADERS *NtHeaders,

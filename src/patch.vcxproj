@@ -112,6 +112,7 @@
   <ItemGroup>
     <ClCompile Include="bcd.c" />
     <ClCompile Include="cui\cui.c" />
+    <ClCompile Include="hde\hde64.c" />
     <ClCompile Include="main.c" />
     <ClCompile Include="minirtl\cmdline.c" />
     <ClCompile Include="minirtl\_filename.c" />
@@ -131,6 +132,9 @@
     <ClInclude Include="bcd.h" />
     <ClInclude Include="cui\cui.h" />
     <ClInclude Include="global.h" />
+    <ClInclude Include="hde\hde64.h" />
+    <ClInclude Include="hde\pstdint.h" />
+    <ClInclude Include="hde\table64.h" />
     <ClInclude Include="minirtl\cmdline.h" />
     <ClInclude Include="minirtl\minirtl.h" />
     <ClInclude Include="minirtl\rtltypes.h" />

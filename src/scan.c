@@ -1,12 +1,12 @@
 /*******************************************************************************
 *
-*  (C) COPYRIGHT AUTHORS, 2017
+*  (C) COPYRIGHT AUTHORS, 2017 - 2018
 *
 *  TITLE:       SCAN.C
 *
-*  VERSION:     1.20
+*  VERSION:     1.21
 *
-*  DATE:        18 Oct 2017
+*  DATE:        29 Mar 2018
 *
 * THIS CODE AND INFORMATION IS PROVIDED "AS IS" WITHOUT WARRANTY OF
 * ANY KIND, EITHER EXPRESSED OR IMPLIED, INCLUDING BUT NOT LIMITED
@@ -351,6 +351,7 @@ PVOID FindPattern(
 */
 BOOLEAN QueryKeInitAmd64SpecificStateOffset(
     _In_ ULONG BuildNumber,
+    _In_ ULONG Revision,
     _In_ PBYTE DllBase,
     _In_ SIZE_T DllVirtualSize,
     _In_ IMAGE_NT_HEADERS *NtHeaders,
@@ -362,6 +363,7 @@ BOOLEAN QueryKeInitAmd64SpecificStateOffset(
     PVOID Ptr, ScanPtr = NULL, Pattern = NULL;
 
     UNREFERENCED_PARAMETER(DllVirtualSize);
+    UNREFERENCED_PARAMETER(Revision);
 
     Address = (ULONG_PTR)SymbolAddressFromName(TEXT("KeInitAmd64SpecificState"));
     if (Address == 0) {
@@ -435,6 +437,7 @@ BOOLEAN QueryKeInitAmd64SpecificStateOffset(
 */
 BOOLEAN QueryExpLicenseWatchInitWorkerOffset(
     _In_ ULONG BuildNumber,
+    _In_ ULONG Revision,
     _In_ PBYTE DllBase,
     _In_ SIZE_T DllVirtualSize,
     _In_ IMAGE_NT_HEADERS *NtHeaders,
@@ -446,6 +449,7 @@ BOOLEAN QueryExpLicenseWatchInitWorkerOffset(
     PVOID Ptr, ScanPtr = NULL, Pattern = NULL;
 
     UNREFERENCED_PARAMETER(DllVirtualSize);
+    UNREFERENCED_PARAMETER(Revision);
 
     Address = (ULONG_PTR)SymbolAddressFromName(TEXT("ExpLicenseWatchInitWorker"));
     if (Address == 0) {
@@ -520,6 +524,7 @@ BOOLEAN QueryExpLicenseWatchInitWorkerOffset(
 */
 BOOLEAN QueryKiFilterFiberContextOffset(
     _In_ ULONG BuildNumber,
+    _In_ ULONG Revision,
     _In_ PBYTE DllBase,
     _In_ SIZE_T DllVirtualSize,
     _In_ IMAGE_NT_HEADERS *NtHeaders,
@@ -531,6 +536,7 @@ BOOLEAN QueryKiFilterFiberContextOffset(
     PVOID Ptr, ScanPtr = NULL, Pattern = NULL;
 
     UNREFERENCED_PARAMETER(DllVirtualSize);
+    UNREFERENCED_PARAMETER(Revision);
 
     Address = (ULONG_PTR)SymbolAddressFromName(TEXT("KiFilterFiberContext"));
     if (Address == 0) {
@@ -620,6 +626,7 @@ BOOLEAN QueryKiFilterFiberContextOffset(
 */
 BOOLEAN QueryCcInitializeBcbProfilerOffset(
     _In_ ULONG BuildNumber,
+    _In_ ULONG Revision,
     _In_ PBYTE DllBase,
     _In_ SIZE_T DllVirtualSize,
     _In_ IMAGE_NT_HEADERS *NtHeaders,
@@ -632,6 +639,7 @@ BOOLEAN QueryCcInitializeBcbProfilerOffset(
     PVOID Ptr, ScanPtr = NULL, Pattern = NULL;
 
     UNREFERENCED_PARAMETER(DllVirtualSize);
+    UNREFERENCED_PARAMETER(Revision);
 
     if (BuildNumber == 7601) {
         //
@@ -733,6 +741,91 @@ BOOLEAN QueryCcInitializeBcbProfilerOffset(
 // DSE part
 //
 
+/*
+* QuerySeValidateImageDataOffsetWin7
+*
+* Purpose:
+*
+* Search for SeValidateImageData pattern address inside ntoskrnl.exe.
+* Signature version for Windows 7.
+*
+*/
+BOOLEAN QuerySeValidateImageDataOffsetWin7(
+    _In_ PBYTE DllBase,
+    _In_ IMAGE_NT_HEADERS *NtHeaders,
+    _Inout_ PATCH_CONTEXT *SeValidateImageData)
+{
+    PVOID       ScanPtr = NULL, Ptr = NULL;
+    ULONG       ScanSize = 0, c;
+    ULONG_PTR   Address = 0, u;
+    hde64s      hs;
+
+    //
+    // Locate PAGE section as starting point for binary search.
+    //
+    ScanPtr = supLookupImageSectionByNameULONG('EGAP', DllBase, &ScanSize);
+    if (ScanPtr == NULL)
+        return FALSE;
+
+    //
+    // Find SeValidateImageData prologue.
+    //
+    Address = (ULONG_PTR)FindPattern(
+        ScanPtr,
+        ScanSize,
+        ptSevalidateImageData_760X,
+        sizeof(ptSevalidateImageData_760X));
+
+    if (Address == 0)
+        return FALSE;
+
+    u = (Address - (ULONG_PTR)ScanPtr);
+    if (u > MAXULONG32)
+        return FALSE;
+
+    u = (ScanSize - u);
+    if (u <= 128)
+        return FALSE;
+
+    //
+    // Find exact location of conditional jump.
+    //
+    c = 0;
+    RtlSecureZeroMemory(&hs, sizeof(hs));
+
+    do {
+
+        hde64_disasm((void*)(Address + c), &hs);
+        if (hs.flags & F_ERROR)
+            break;
+
+        if (hs.len == 2) {
+            if ((*(PBYTE)(Address + c) == 0x74)) {  //jz
+
+                Address = Address + c;
+
+                //
+                // Convert to physical offset in file.
+                //
+                Ptr = RtlAddressInSectionTable(NtHeaders, DllBase, (ULONG)(Address - (ULONG_PTR)DllBase));
+                SeValidateImageData->AddressOfPatch = (ULONG_PTR)Ptr - (ULONG_PTR)DllBase;
+
+                //
+                // Assign patch data block to be written in patch routine.
+                //
+                SeValidateImageData->PatchData = pdSeValidateImageData_2;
+                SeValidateImageData->SizeOfPatch = sizeof(pdSeValidateImageData_2);
+
+                return TRUE;
+                break;
+            }
+        }
+        c += hs.len;
+
+    } while (c < 128);
+
+    return FALSE;
+}
 
 /*
 * QuerySeValidateImageDataOffset
@@ -745,6 +838,7 @@ BOOLEAN QueryCcInitializeBcbProfilerOffset(
 */
 BOOLEAN QuerySeValidateImageDataOffset(
     _In_ ULONG BuildNumber,
+    _In_ ULONG Revision,
     _In_ PBYTE DllBase,
     _In_ SIZE_T DllVirtualSize,
     _In_ IMAGE_NT_HEADERS *NtHeaders,
@@ -757,21 +851,17 @@ BOOLEAN QuerySeValidateImageDataOffset(
     PVOID Ptr, Pattern = NULL;
     PVOID ScanPtr = NULL;
 
+    UNREFERENCED_PARAMETER(Revision);
+
     switch (BuildNumber) {
 
     case 7601:
 
-        //
-        // Windows 7 special case, SeValidateImageData pattern is not unique.
-        // Required code located in PAGE section.
-        //
+        return QuerySeValidateImageDataOffsetWin7(
+            DllBase,
+            NtHeaders,
+            SeValidateImageData);
 
-        ScanPtr = supLookupImageSectionByNameULONG('EGAP', DllBase, &ScanSize);
-        if (ScanPtr) {
-            Pattern = ptSeValidateImageData_7601;
-            PatternSize = sizeof(ptSeValidateImageData_7601);
-            SkipBytes = ptSkipBytesSeValidateImageData_7601;
-        }
         break;
 
     case 9200:
@@ -886,6 +976,7 @@ BOOLEAN QuerySeValidateImageDataOffset(
 */
 BOOLEAN QuerySepInitializeCodeIntegrityOffset(
     _In_ ULONG BuildNumber,
+    _In_ ULONG Revision,
     _In_ PBYTE DllBase,
     _In_ SIZE_T DllVirtualSize,
     _In_ IMAGE_NT_HEADERS *NtHeaders,
@@ -898,6 +989,7 @@ BOOLEAN QuerySepInitializeCodeIntegrityOffset(
     PVOID ScanPtr, Pattern = NULL, Ptr, SectionPtr = NULL;
 
     UNREFERENCED_PARAMETER(DllVirtualSize);
+    UNREFERENCED_PARAMETER(Revision);
 
     //
     // Locate function pointer.
@@ -1034,18 +1126,13 @@ BOOLEAN QuerySepInitializeCodeIntegrityOffset(
 *
 */
 BOOLEAN QueryImgpValidateImageHashOffsetSymbols(
-    _In_ ULONG BuildNumber,
     _In_ PBYTE DllBase,
-    _In_ SIZE_T DllVirtualSize,
     _In_ IMAGE_NT_HEADERS *NtHeaders,
     _Inout_ PATCH_CONTEXT *ImgpValidateImageHash
 )
 {
     ULONG_PTR Address = 0;
     PVOID Ptr;
-
-    UNREFERENCED_PARAMETER(BuildNumber);
-    UNREFERENCED_PARAMETER(DllVirtualSize);
 
     Address = (ULONG_PTR)SymbolAddressFromName(TEXT("ImgpValidateImageHash"));
 
@@ -1078,6 +1165,7 @@ BOOLEAN QueryImgpValidateImageHashOffsetSymbols(
 */
 BOOLEAN QueryImgpValidateImageHashOffsetSignatures(
     _In_ ULONG BuildNumber,
+    _In_ ULONG Revision,
     _In_ PBYTE DllBase,
     _In_ SIZE_T DllVirtualSize,
     _In_ IMAGE_NT_HEADERS *NtHeaders,
@@ -1087,6 +1175,8 @@ BOOLEAN QueryImgpValidateImageHashOffsetSignatures(
     ULONG_PTR Address = 0;
     ULONG PatternSize = 0;
     PVOID Pattern = NULL, Ptr;
+
+    UNREFERENCED_PARAMETER(Revision);
 
     switch (BuildNumber) {
 
