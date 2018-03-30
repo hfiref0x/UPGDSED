@@ -1,12 +1,12 @@
 /*******************************************************************************
 *
-*  (C) COPYRIGHT AUTHORS, 2017
+*  (C) COPYRIGHT AUTHORS, 2017 - 2018
 *
 *  TITLE:       PATTERNS.H
 *
-*  VERSION:     1.20
+*  VERSION:     1.21
 *
-*  DATE:        19 Oct 2017
+*  DATE:        29 Mar 2018
 *
 *  Search patterns and patches header file.
 *
@@ -33,8 +33,19 @@
 // Patch data for SeValidateImageData STATUS_SUCCESS
 unsigned char pdSeValidateImageData[] = { 0x0, 0x0, 0x0, 0x0 };
 
+// Patch data for SeValidateImageData (return STATUS_SUCCESS) 
+// xor eax, eax
+// retn
+unsigned char pdSeValidateImageData_2[] = { 0x33, 0xC0, 0xC3 };
+
+// 
+// sub rsp, 28h
+// xor eax eax
+// cmp
+//
+unsigned char ptSevalidateImageData_760X[] = { 0x48, 0x83, 0xEC, 0x28, 0x33, 0xC0, 0x38, 0x05 };
+
 //mov eax, STATUS_INVALID_IMAGE_HASH
-unsigned char ptSeValidateImageData_7601[] = { 0xB8, 0x28, 0x04, 0x00, 0xC0, 0xE9 };
 unsigned char ptSeValidateImageData_9200[] = { 0xCC, 0x90, 0x90, 0xB8, 0x28, 0x04, 0x00, 0xC0 };
 unsigned char ptSeValidateImageData_9600_16299[] = { 0xB8, 0x28, 0x04, 0x00, 0xC0 };
 

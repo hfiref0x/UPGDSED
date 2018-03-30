@@ -1,13 +1,13 @@
 
 /*******************************************************************************
 *
-*  (C) COPYRIGHT AUTHORS, 2017
+*  (C) COPYRIGHT AUTHORS, 2017 - 2018
 *
 *  TITLE:       GLOBAL.H
 *
-*  VERSION:     1.20
+*  VERSION:     1.21
 *
-*  DATE:        18 Oct 2017
+*  DATE:        29 Mar 2018
 *
 *  Common header file for the project.
 *
@@ -65,11 +65,11 @@
 #define NTOSKRNMP_EXE   L"ntkrnlmp.exe"
 
 #define BCDEDIT_EXE     L"bcdedit.exe"
-#define BCDEDIT_LENGTH  sizeof(BCDEDIT_EXE) / 2
+#define BCDEDIT_LENGTH  sizeof(BCDEDIT_EXE) / sizeof(WCHAR)
 
 #define CONTINUE_CMD    L"CONTINUE"
 
-#define PROGRAMTITLE    L"UPGDSED v1.2.0"
+#define PROGRAMTITLE    L"UPGDSED v1.2.1"
 #define PROGRAMFULLNAME L"Universal PatchGuard and Driver Signature Enforcement Disable"
 
 #define MAX_PATCH_COUNT 10

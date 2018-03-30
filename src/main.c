@@ -1,12 +1,12 @@
 /*******************************************************************************
 *
-*  (C) COPYRIGHT AUTHORS, 2017
+*  (C) COPYRIGHT AUTHORS, 2017 - 2018
 *
 *  TITLE:       MAIN.C
 *
-*  VERSION:     1.20
+*  VERSION:     1.21
 *
-*  DATE:        20 Oct 2017
+*  DATE:        29 Mar 2018
 *
 * THIS CODE AND INFORMATION IS PROVIDED "AS IS" WITHOUT WARRANTY OF
 * ANY KIND, EITHER EXPRESSED OR IMPLIED, INCLUDING BUT NOT LIMITED
@@ -84,14 +84,16 @@ BOOLEAN ScanNtos(
         _strcpy(szBuffer, g_szTempDirectory);
         _strcat(szBuffer, NTOSKRNMP_EXE);
 #else 
+        //_strcpy(szBuffer, L"D:\\dumps\\pgos\\6.1.7601.18471\\ntoskrnl.exe");
         //_strcpy(szBuffer, L"D:\\dumps\\pgos\\6.1.7601.23418\\ntoskrnl.exe");
+        _strcpy(szBuffer, L"D:\\dumps\\pgos\\6.1.7601.24059\\ntoskrnl.exe");
         //_strcpy(szBuffer, L"D:\\dumps\\pgos\\6.2.9200.16384\\ntoskrnl.exe");
         //_strcpy(szBuffer, L"D:\\dumps\\pgos\\6.3.9600.18589\\ntoskrnl.exe");
         //_strcpy(szBuffer, L"D:\\dumps\\pgos\\10.0.10240.16384\\ntoskrnl.exe");
         //_strcpy(szBuffer, L"D:\\dumps\\pgos\\10.0.10586.0\\ntoskrnl.exe");
         //_strcpy(szBuffer, L"D:\\dumps\\pgos\\10.0.14393.0\\ntoskrnl.exe");
         //_strcpy(szBuffer, L"D:\\dumps\\pgos\\10.0.15063.0\\ntoskrnl.exe");
-        _strcpy(szBuffer, L"D:\\dumps\\pgos\\10.0.16299.15\\ntoskrnl.exe");
+        //_strcpy(szBuffer, L"D:\\dumps\\pgos\\10.0.16299.15\\ntoskrnl.exe");
 #endif
 
         if (!supGetBinaryVersionNumbers(
@@ -140,6 +142,7 @@ BOOLEAN ScanNtos(
         //
         if (!QuerySeValidateImageDataOffset(
             BuildNumber,
+            Revision,
             DllBase,
             DllVirtualSize,
             NtHeaders,
@@ -158,6 +161,7 @@ BOOLEAN ScanNtos(
         //
         if (!QueryCcInitializeBcbProfilerOffset(
             BuildNumber,
+            Revision,
             DllBase,
             DllVirtualSize,
             NtHeaders,
@@ -178,6 +182,7 @@ BOOLEAN ScanNtos(
 
             if (!QueryKiFilterFiberContextOffset(
                 BuildNumber,
+                Revision,
                 DllBase,
                 DllVirtualSize,
                 NtHeaders,
@@ -201,6 +206,7 @@ BOOLEAN ScanNtos(
             //
             if (!QueryKeInitAmd64SpecificStateOffset(
                 BuildNumber,
+                Revision,
                 DllBase,
                 DllVirtualSize,
                 NtHeaders,
@@ -222,6 +228,7 @@ BOOLEAN ScanNtos(
 
                 if (!QueryExpLicenseWatchInitWorkerOffset(
                     BuildNumber,
+                    Revision,
                     DllBase,
                     DllVirtualSize,
                     NtHeaders,
@@ -243,6 +250,7 @@ BOOLEAN ScanNtos(
         //
         if (!QuerySepInitializeCodeIntegrityOffset(
             BuildNumber,
+            Revision,
             DllBase,
             DllVirtualSize,
             NtHeaders,
@@ -354,9 +362,7 @@ BOOLEAN ScanWinload(
         if (SymbolsLoadForFile(szBuffer, (DWORD64)DllBase)) {
 
             if (QueryImgpValidateImageHashOffsetSymbols(
-                BuildNumber,
                 DllBase,
-                DllVirtualSize,
                 NtHeaders,
                 &ImgpValidateImageHash))
             {
@@ -383,6 +389,7 @@ BOOLEAN ScanWinload(
 
             bResult = QueryImgpValidateImageHashOffsetSignatures(
                 BuildNumber,
+                Revision,
                 DllBase,
                 DllVirtualSize,
                 NtHeaders,
@@ -531,7 +538,6 @@ UINT PatchMain()
 
     do {
 
-        SetConsoleTitle(PROGRAMTITLE);
         SetConsoleMode(g_ConOut, ENABLE_LINE_INPUT | ENABLE_ECHO_INPUT | ENABLE_PROCESSED_OUTPUT);
         if (g_ConsoleOutput == FALSE) {
             WriteFile(g_ConOut, &g_BE, sizeof(WCHAR), &l, NULL);
@@ -644,6 +650,14 @@ UINT PatchMain()
                 }
             }
         }
+
+        _strcpy(szBuffer, PROGRAMTITLE);
+        if (g_IsEFI) 
+            _strcat(szBuffer, TEXT(" * EFI Boot"));
+        else
+            _strcat(szBuffer, TEXT(" * Legacy Boot"));
+        
+        SetConsoleTitle(szBuffer);
 
         //
         // Output current Windoze version
