@@ -50,7 +50,6 @@
 #include "minirtl\rtltypes.h"
 #include "minirtl\_filename.h"
 #include "minirtl\cmdline.h"
-#include "hde\hde64.h"
 #include "cui\cui.h"
 
 #pragma comment(lib, "version.lib")
@@ -66,7 +65,7 @@
 #define NTOSKRNMP_EXE   L"ntkrnlmp.exe"
 
 #define BCDEDIT_EXE     L"bcdedit.exe"
-#define BCDEDIT_LENGTH  sizeof(BCDEDIT_EXE) / 2
+#define BCDEDIT_LENGTH  sizeof(BCDEDIT_EXE) / sizeof(WCHAR)
 
 #define CONTINUE_CMD    L"CONTINUE"
 

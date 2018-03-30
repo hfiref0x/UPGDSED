@@ -33,8 +33,10 @@
 // Patch data for SeValidateImageData STATUS_SUCCESS
 unsigned char pdSeValidateImageData[] = { 0x0, 0x0, 0x0, 0x0 };
 
-// Patch data for SeValidateImageData jmp to ret 0
-unsigned char pdSeValidateImageData_2[] = { 0xEB };
+// Patch data for SeValidateImageData (return STATUS_SUCCESS) 
+// xor eax, eax
+// retn
+unsigned char pdSeValidateImageData_2[] = { 0x33, 0xC0, 0xC3 };
 
 // 
 // sub rsp, 28h

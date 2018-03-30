@@ -742,92 +742,6 @@ BOOLEAN QueryCcInitializeBcbProfilerOffset(
 //
 
 /*
-* QuerySeValidateImageDataOffsetWin7
-*
-* Purpose:
-*
-* Search for SeValidateImageData pattern address inside ntoskrnl.exe.
-* Signature version for Windows 7.
-*
-*/
-BOOLEAN QuerySeValidateImageDataOffsetWin7(
-    _In_ PBYTE DllBase,
-    _In_ IMAGE_NT_HEADERS *NtHeaders,
-    _Inout_ PATCH_CONTEXT *SeValidateImageData)
-{
-    PVOID       ScanPtr = NULL, Ptr = NULL;
-    ULONG       ScanSize = 0, c;
-    ULONG_PTR   Address = 0, u;
-    hde64s      hs;
-
-    //
-    // Locate PAGE section as starting point for binary search.
-    //
-    ScanPtr = supLookupImageSectionByNameULONG('EGAP', DllBase, &ScanSize);
-    if (ScanPtr == NULL)
-        return FALSE;
-
-    //
-    // Find SeValidateImageData prologue.
-    //
-    Address = (ULONG_PTR)FindPattern(
-        ScanPtr,
-        ScanSize,
-        ptSevalidateImageData_760X,
-        sizeof(ptSevalidateImageData_760X));
-
-    if (Address == 0)
-        return FALSE;
-
-    u = (Address - (ULONG_PTR)ScanPtr);
-    if (u > MAXULONG32)
-        return FALSE;
-
-    u = (ScanSize - u);
-    if (u <= 128)
-        return FALSE;
-
-    //
-    // Find exact location of conditional jump.
-    //
-    c = 0;
-    RtlSecureZeroMemory(&hs, sizeof(hs));
-
-    do {
-
-        hde64_disasm((void*)(Address + c), &hs);
-        if (hs.flags & F_ERROR)
-            break;
-
-        if (hs.len == 2) {
-            if ((*(PBYTE)(Address + c) == 0x74)) {  //jz
-
-                Address = Address + c;
-
-                //
-                // Convert to physical offset in file.
-                //
-                Ptr = RtlAddressInSectionTable(NtHeaders, DllBase, (ULONG)(Address - (ULONG_PTR)DllBase));
-                SeValidateImageData->AddressOfPatch = (ULONG_PTR)Ptr - (ULONG_PTR)DllBase;
-
-                //
-                // Assign patch data block to be written in patch routine.
-                //
-                SeValidateImageData->PatchData = pdSeValidateImageData_2;
-                SeValidateImageData->SizeOfPatch = sizeof(pdSeValidateImageData_2);
-
-                return TRUE;
-                break;
-            }
-        }
-        c += hs.len;
-
-    } while (c < 128);
-
-    return FALSE;
-}
-
-/*
 * QuerySeValidateImageDataOffset
 *
 * Purpose:
@@ -846,22 +760,32 @@ BOOLEAN QuerySeValidateImageDataOffset(
 )
 {
     BOOL bSymbolsFailed = FALSE;
-    ULONG ScanSize = 0, PatternSize = 0, SkipBytes = 0;
+    ULONG ScanSize = 0, PatternSize = 0, PatchSize = 0, SkipBytes = 0;
     ULONG_PTR Address = 0;
-    PVOID Ptr, Pattern = NULL;
+    PVOID Ptr, Pattern = NULL, PatchData = NULL;
     PVOID ScanPtr = NULL;
 
     UNREFERENCED_PARAMETER(Revision);
+
+    PatchData = pdSeValidateImageData;
+    PatchSize = sizeof(pdSeValidateImageData);
 
     switch (BuildNumber) {
 
     case 7601:
 
-        return QuerySeValidateImageDataOffsetWin7(
-            DllBase,
-            NtHeaders,
-            SeValidateImageData);
-
+        //
+        // Windows 7 special case, SeValidateImageData pattern is not unique.
+        // Required code located in PAGE section.
+        //
+        ScanPtr = supLookupImageSectionByNameULONG('EGAP', DllBase, &ScanSize);
+        if (ScanPtr) {
+            Pattern = ptSevalidateImageData_760X;
+            PatternSize = sizeof(ptSevalidateImageData_760X);
+            PatchData = pdSeValidateImageData_2;
+            PatchSize = sizeof(pdSeValidateImageData_2);
+            SkipBytes = 0;
+        }
         break;
 
     case 9200:
@@ -951,15 +875,15 @@ BOOLEAN QuerySeValidateImageDataOffset(
         SeValidateImageData->AddressOfPatch = (ULONG_PTR)Ptr - (ULONG_PTR)DllBase;
 
         //
-        // Skip 'mov' instruction
+        // Apply "SkipBytes"
         //
         SeValidateImageData->AddressOfPatch += (ULONG_PTR)SkipBytes;
 
         //
         // Assign patch data block to be written in patch routine.
         //
-        SeValidateImageData->PatchData = pdSeValidateImageData;
-        SeValidateImageData->SizeOfPatch = sizeof(pdSeValidateImageData);
+        SeValidateImageData->PatchData = PatchData;
+        SeValidateImageData->SizeOfPatch = PatchSize;
 
     }
 
