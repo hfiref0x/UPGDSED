@@ -1,7 +1,7 @@
 Changes since v1.0.0 release
 
 v1.2.1 Mar 29, 2018
-Addressing Windows 7 KB4088875 changes, issue #18
+Addressing Windows 7 KB4088875/KB4100480 changes, issue #18
 
 v1.2.0 Nov 01, 2017
 Experimental Windows 10 RS3 support
