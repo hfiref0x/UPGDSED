@@ -1,5 +1,8 @@
 Changes since v1.0.0 release
 
+v1.3.0 Mar 30, 2018
+Experimental Windows RS4 support (untested)
+
 v1.2.1 Mar 29, 2018
 Addressing Windows 7 KB4088875/KB4100480 changes, issue #18
 

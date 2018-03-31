@@ -4,9 +4,9 @@
 *
 *  TITLE:       SCAN.H
 *
-*  VERSION:     1.21
+*  VERSION:     1.30
 *
-*  DATE:        29 Mar 2018
+*  DATE:        30 Mar 2018
 *
 *  Header file for image scan routine prototypes and definitions.
 *
@@ -19,10 +19,10 @@
 #include "global.h"
 
 PVOID FindPattern(
-    CONST PBYTE Buffer,
-    SIZE_T BufferSize,
-    CONST PBYTE Pattern,
-    SIZE_T PatternSize);
+    _In_ CONST PBYTE Buffer,
+    _In_ SIZE_T BufferSize,
+    _In_ CONST PBYTE Pattern,
+    _In_ SIZE_T PatternSize);
 
 BOOL InitDbgHelp(
     VOID);

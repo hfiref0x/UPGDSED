@@ -4,9 +4,9 @@
 *
 *  TITLE:       SCAN.C
 *
-*  VERSION:     1.21
+*  VERSION:     1.30
 *
-*  DATE:        29 Mar 2018
+*  DATE:        30 Mar 2018
 *
 * THIS CODE AND INFORMATION IS PROVIDED "AS IS" WITHOUT WARRANTY OF
 * ANY KIND, EITHER EXPRESSED OR IMPLIED, INCLUDING BUT NOT LIMITED
@@ -26,7 +26,7 @@ pfnSymEnumSymbolsW      pSymEnumSymbolsW = NULL;
 pfnSymUnloadModule64    pSymUnloadModule64 = NULL;
 pfnSymFromAddrW         pSymFromAddrW = NULL;
 pfnSymCleanup           pSymCleanup = NULL;
-pfnSymGetSymbolFileW     pSymGetSymbolFileW = NULL;
+pfnSymGetSymbolFileW    pSymGetSymbolFileW = NULL;
 
 /*
 * InitDbgHelp
@@ -309,10 +309,10 @@ VOID SymbolsUnload(
 *
 */
 PVOID FindPattern(
-    CONST PBYTE Buffer,
-    SIZE_T BufferSize,
-    CONST PBYTE Pattern,
-    SIZE_T PatternSize
+    _In_ CONST PBYTE Buffer,
+    _In_ SIZE_T BufferSize,
+    _In_ CONST PBYTE Pattern,
+    _In_ SIZE_T PatternSize
 )
 {
     PBYTE	p = Buffer;
@@ -388,8 +388,9 @@ BOOLEAN QueryKeInitAmd64SpecificStateOffset(
             case 14393:
             case 15063:
             case 16299:
-                Pattern = ptKeInitAmd64SpecificState_9200_16299;
-                PatternSize = sizeof(ptKeInitAmd64SpecificState_9200_16299);
+            case 17133:
+                Pattern = ptKeInitAmd64SpecificState_9200_17133;
+                PatternSize = sizeof(ptKeInitAmd64SpecificState_9200_17133);
                 break;
 
             default:
@@ -444,12 +445,15 @@ BOOLEAN QueryExpLicenseWatchInitWorkerOffset(
     _Inout_ PATCH_CONTEXT *ExpLicenseWatchInitWorker
 )
 {
-    ULONG ScanSize = 0, PatternSize = 0;
+    ULONG ScanSize = 0, PatternSize = 0, PatchSize = 0;
     ULONG_PTR Address = 0;
-    PVOID Ptr, ScanPtr = NULL, Pattern = NULL;
+    PVOID Ptr, ScanPtr = NULL, Pattern = NULL, PatchData = NULL;
 
     UNREFERENCED_PARAMETER(DllVirtualSize);
     UNREFERENCED_PARAMETER(Revision);
+
+    PatchData = pdExpLicenseWatchInitWorker;
+    PatchSize = sizeof(pdExpLicenseWatchInitWorker);
 
     Address = (ULONG_PTR)SymbolAddressFromName(TEXT("ExpLicenseWatchInitWorker"));
     if (Address == 0) {
@@ -476,6 +480,13 @@ BOOLEAN QueryExpLicenseWatchInitWorkerOffset(
             case 16299:
                 Pattern = ptExpLicenseWatchInitWorker2;
                 PatternSize = sizeof(ptExpLicenseWatchInitWorker2);
+                break;
+
+            case 17133:
+                Pattern = ptExpLicenseWatchInitWorker_17133;
+                PatternSize = sizeof(ptExpLicenseWatchInitWorker_17133);
+                PatchData = pdExpLicenseWatchInitWorker_17133;
+                PatchSize = sizeof(pdExpLicenseWatchInitWorker_17133);
                 break;
 
             default:
@@ -505,8 +516,8 @@ BOOLEAN QueryExpLicenseWatchInitWorkerOffset(
         //
         // Assign patch data block to be written in patch routine.
         //
-        ExpLicenseWatchInitWorker->PatchData = pdExpLicenseWatchInitWorker;
-        ExpLicenseWatchInitWorker->SizeOfPatch = sizeof(pdExpLicenseWatchInitWorker);
+        ExpLicenseWatchInitWorker->PatchData = PatchData;
+        ExpLicenseWatchInitWorker->SizeOfPatch = PatchSize;
 
     }
 
@@ -577,8 +588,9 @@ BOOLEAN QueryKiFilterFiberContextOffset(
                 break;
 
             case 16299:
-                Pattern = ptKiFilterFiberContext_16299;
-                PatternSize = sizeof(ptKiFilterFiberContext_16299);
+            case 17133:
+                Pattern = ptKiFilterFiberContext_16299_17133;
+                PatternSize = sizeof(ptKiFilterFiberContext_16299_17133);
                 break;
 
             default:
@@ -698,8 +710,9 @@ BOOLEAN QueryCcInitializeBcbProfilerOffset(
             case 14393:
             case 15063:
             case 16299:
-                PatternSize = sizeof(ptCcInitializeBcbProfiler_10240_16299);
-                Pattern = ptCcInitializeBcbProfiler_10240_16299;
+            case 17133:
+                PatternSize = sizeof(ptCcInitializeBcbProfiler_10240_17133);
+                Pattern = ptCcInitializeBcbProfiler_10240_17133;
                 break;
 
             default:
@@ -803,9 +816,13 @@ BOOLEAN QuerySeValidateImageDataOffset(
     case 14393:
     case 15063:
     case 16299:
+    case 17133:
 
-        Pattern = ptSeValidateImageData_9600_16299;
-        PatternSize = sizeof(ptSeValidateImageData_9600_16299);
+        //
+        // Pattern to scan from the SeValidateImageData proc start.
+        //
+        Pattern = ptSeValidateImageData_9600_17133;
+        PatternSize = sizeof(ptSeValidateImageData_9600_17133);
 
         ScanPtr = (PVOID)SymbolAddressFromName(TEXT("SeValidateImageData"));
 
@@ -820,7 +837,7 @@ BOOLEAN QuerySeValidateImageDataOffset(
             ScanSize = 0x200;
         }
 
-        SkipBytes = ptSkipBytesSeValidateImageData_9600_16299;
+        SkipBytes = ptSkipBytesSeValidateImageData_9600_17133;
         break;
 
     default:
@@ -832,6 +849,8 @@ BOOLEAN QuerySeValidateImageDataOffset(
 
     //
     // Symbols failed for some reason, switch to signature scan.
+    //
+    // Patterns to scan from the section proc start.
     //
     if (bSymbolsFailed) {
 
@@ -847,8 +866,9 @@ BOOLEAN QuerySeValidateImageDataOffset(
 
         case 15063:
         case 16299:
-            Pattern = ptSeValidateImageData_2_15063_16299;
-            PatternSize = sizeof(ptSeValidateImageData_2_15063_16299);
+        case 17133:
+            Pattern = ptSeValidateImageData_2_15063_17133;
+            PatternSize = sizeof(ptSeValidateImageData_2_15063_17133);
             break;
 
         default:
@@ -960,6 +980,11 @@ BOOLEAN QuerySepInitializeCodeIntegrityOffset(
                 PatternSize = sizeof(ptSepInitializeCodeIntegrity2_16299);
                 break;
 
+            case 17133:
+                Pattern = ptSepInitializeCodeIntegrity2_17133;
+                PatternSize = sizeof(ptSepInitializeCodeIntegrity2_17133);
+                break;
+
             default:
                 break;
             }
@@ -976,6 +1001,9 @@ BOOLEAN QuerySepInitializeCodeIntegrityOffset(
         }
 
     }
+
+    if (ScanPtr == NULL)
+        return FALSE;
 
     //
     // Scan for specific place inside found fuction.
@@ -1006,8 +1034,9 @@ BOOLEAN QuerySepInitializeCodeIntegrityOffset(
         break;
 
     case 16299:
-        Pattern = ptSepInitializeCodeIntegrity_16299;
-        PatternSize = sizeof(ptSepInitializeCodeIntegrity_16299);
+    case 17133:
+        Pattern = ptSepInitializeCodeIntegrity_16299_17133;
+        PatternSize = sizeof(ptSepInitializeCodeIntegrity_16299_17133);
         break;
 
     default:
@@ -1140,8 +1169,9 @@ BOOLEAN QueryImgpValidateImageHashOffsetSignatures(
         break;
 
     case 16299:
-        Pattern = ptImgpValidateImageHash_16299;
-        PatternSize = sizeof(ptImgpValidateImageHash_16299);
+    case 17133:
+        Pattern = ptImgpValidateImageHash_16299_17133;
+        PatternSize = sizeof(ptImgpValidateImageHash_16299_17133);
         break;
 
     default:

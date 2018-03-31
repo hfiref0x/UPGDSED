@@ -1,12 +1,12 @@
 /*******************************************************************************
 *
-*  (C) COPYRIGHT AUTHORS, 2017
+*  (C) COPYRIGHT AUTHORS, 2017 - 2018
 *
 *  TITLE:       SUP.C
 *
-*  VERSION:     1.20
+*  VERSION:     1.30
 *
-*  DATE:        20 Oct 2017
+*  DATE:        30 Mar 2018
 *
 * THIS CODE AND INFORMATION IS PROVIDED "AS IS" WITHOUT WARRANTY OF
 * ANY KIND, EITHER EXPRESSED OR IMPLIED, INCLUDING BUT NOT LIMITED
@@ -272,6 +272,11 @@ BOOLEAN supMakeCopyToTemp(
     k = _strlen(szDest);
     _strcat(szDest, NTOSKRNMP_EXE);
 
+    if (PathFileExists(szDest)) {
+        SetFileAttributes(szDest, FILE_ATTRIBUTE_NORMAL);
+        DeleteFile(szDest);
+    }
+
     if (!CopyFile(szSource, szDest, FALSE))
         return FALSE;
 
@@ -283,6 +288,12 @@ BOOLEAN supMakeCopyToTemp(
         _strcpy(&szSource[l], WINLOAD_EXE);
         _strcpy(&szDest[k], OSLOAD_EXE);
     }
+
+    if (PathFileExists(szDest)) {
+        SetFileAttributes(szDest, FILE_ATTRIBUTE_NORMAL);
+        DeleteFile(szDest);
+    }
+
     if (!CopyFile(szSource, szDest, FALSE))
         return FALSE;
 
@@ -455,6 +466,11 @@ BOOL supExtractSymDllsToTemp(
         Length = _strlen(szExtractFileName);
         _strcat(szExtractFileName, TEXT("dbghelp.dll"));
 
+        if (PathFileExists(szExtractFileName)) {
+            SetFileAttributes(szExtractFileName, FILE_ATTRIBUTE_NORMAL);
+            DeleteFile(szExtractFileName);
+        }
+
         hFile = CreateFile(szExtractFileName, GENERIC_WRITE,
             0, NULL, CREATE_ALWAYS, 0, NULL);
         if (hFile != INVALID_HANDLE_VALUE) {
@@ -477,6 +493,12 @@ BOOL supExtractSymDllsToTemp(
 
         szExtractFileName[Length] = 0;
         _strcat(szExtractFileName, TEXT("symsrv.dll"));
+
+        if (PathFileExists(szExtractFileName)) {
+            SetFileAttributes(szExtractFileName, FILE_ATTRIBUTE_NORMAL);
+            DeleteFile(szExtractFileName);
+        }
+
         hFile = CreateFile(szExtractFileName, GENERIC_WRITE,
             0, NULL, CREATE_ALWAYS, 0, NULL);
         if (hFile != INVALID_HANDLE_VALUE) {

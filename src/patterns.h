@@ -4,9 +4,9 @@
 *
 *  TITLE:       PATTERNS.H
 *
-*  VERSION:     1.21
+*  VERSION:     1.30
 *
-*  DATE:        29 Mar 2018
+*  DATE:        30 Mar 2018
 *
 *  Search patterns and patches header file.
 *
@@ -34,27 +34,29 @@
 unsigned char pdSeValidateImageData[] = { 0x0, 0x0, 0x0, 0x0 };
 
 // Patch data for SeValidateImageData (return STATUS_SUCCESS) 
+//
 // xor eax, eax
 // retn
+//
 unsigned char pdSeValidateImageData_2[] = { 0x33, 0xC0, 0xC3 };
 
 // 
 // sub rsp, 28h
-// xor eax eax
+// xor eax, eax
 // cmp
 //
 unsigned char ptSevalidateImageData_760X[] = { 0x48, 0x83, 0xEC, 0x28, 0x33, 0xC0, 0x38, 0x05 };
 
 //mov eax, STATUS_INVALID_IMAGE_HASH
 unsigned char ptSeValidateImageData_9200[] = { 0xCC, 0x90, 0x90, 0xB8, 0x28, 0x04, 0x00, 0xC0 };
-unsigned char ptSeValidateImageData_9600_16299[] = { 0xB8, 0x28, 0x04, 0x00, 0xC0 };
+unsigned char ptSeValidateImageData_9600_17133[] = { 0xB8, 0x28, 0x04, 0x00, 0xC0 };
 
 unsigned char ptSeValidateImageData_2_9600_14393[] = { 0xB8, 0x28, 0x04, 0x00, 0xC0, 0xC3 };
-unsigned char ptSeValidateImageData_2_15063_16299[] = { 0xB8, 0x28, 0x04, 0x00, 0xC0, 0xEB };
+unsigned char ptSeValidateImageData_2_15063_17133[] = { 0xB8, 0x28, 0x04, 0x00, 0xC0, 0xEB };
 
 #define ptSkipBytesSeValidateImageData_7601             1
 #define ptSkipBytesSeValidateImageData_9200             4
-#define ptSkipBytesSeValidateImageData_9600_16299       1
+#define ptSkipBytesSeValidateImageData_9600_17133       1
 
 
 //********************************************************
@@ -63,10 +65,12 @@ unsigned char ptSeValidateImageData_2_15063_16299[] = { 0xB8, 0x28, 0x04, 0x00, 
 //
 //********************************************************
 
-//always in INIT
-//Patch data for CcInitializeBcbProfiler
-//mov al, 1
-//retn
+// Always in INIT
+// Patch data for CcInitializeBcbProfiler
+//
+// mov al, 1
+// retn
+//
 unsigned char pdCcInitializeBcbProfiler[] = { 0xB0, 0x01, 0xC3 };
 
 //Windows 7
@@ -89,7 +93,7 @@ unsigned char ptCcInitializeBcbProfiler_9600[] = {
 };
 
 //Windows 10+
-unsigned char ptCcInitializeBcbProfiler_10240_16299[] = {
+unsigned char ptCcInitializeBcbProfiler_10240_17133[] = {
     0x40, 0x55, 0x53, 0x56, 0x57, 0x41, 0x54, 0x41,
     0x55, 0x41, 0x56, 0x41, 0x57, 0x48, 0x8D, 0x6C,
     0x24, 0xE1, 0x48, 0x81, 0xEC, 0xB8, 0x00, 0x00,
@@ -102,10 +106,11 @@ unsigned char ptCcInitializeBcbProfiler_10240_16299[] = {
 //
 //********************************************************
 
-
-//Patch data for KiFilterFiberContext
-//mov al, 1
-//retn
+// Patch data for KiFilterFiberContext
+//
+// mov al, 1
+// retn
+//
 unsigned char pdKiFilterFiberContext[] = { 0xB0, 0x01, 0xC3 };
 
 //Windows 7
@@ -150,8 +155,8 @@ unsigned char ptKiFilterFiberContext_14393_15063[] = {
     0x40, 0x48, 0x8B
 };
 
-//Windows 10 RS3
-unsigned char ptKiFilterFiberContext_16299[] = {
+//Windows 10 RS3 / RS4
+unsigned char ptKiFilterFiberContext_16299_17133[] = {
     0x48, 0x89, 0x5C, 0x24, 0x08, 0x55, 0x56, 
     0x57, 0x41, 0x54, 0x41, 0x55, 0x41, 0x56, 
     0x41, 0x57, 0x48, 0x8D, 0x6C, 0x24, 0xD9, 
@@ -166,15 +171,15 @@ unsigned char ptKiFilterFiberContext_16299[] = {
 
 
 //Patch data for KeInitAmd64SpecificState
-//xor eax, eax
-//retn
+// xor eax, eax
+// retn
 unsigned char pdKeInitAmd64SpecificState[] = { 0x33, 0xC0, 0xC3 };
 
 //Windows 7
 unsigned char ptKeInitAmd64SpecificState_7601[] = { 0x48, 0x83, 0xEC, 0x28, 0x0F, 0xB6 };
 
-//Windows 8/8.1/10 (TH1/TH2/RS1/RS2/RS3)
-unsigned char ptKeInitAmd64SpecificState_9200_16299[] = { 0x48, 0x83, 0xEC, 0x28, 0x83, 0x3D };
+//Windows 8/8.1/10 (TH1/TH2/RS1/RS2/RS3/RS4)
+unsigned char ptKeInitAmd64SpecificState_9200_17133[] = { 0x48, 0x83, 0xEC, 0x28, 0x83, 0x3D };
 
 //********************************************************
 //
@@ -182,12 +187,19 @@ unsigned char ptKeInitAmd64SpecificState_9200_16299[] = { 0x48, 0x83, 0xEC, 0x28
 //
 //********************************************************
 
+//Target always in INIT
 
 //Patch data for ExpLicenseWatchInitWorker
-//xor eax, eax
-//retn
+// xor eax, eax
+// retn
 unsigned char pdExpLicenseWatchInitWorker[] = { 0x33, 0xC0, 0xC3 };
 
+//Windows 10 RS4
+// xor eax, eax
+// add rsp, 30h
+// pop rbx
+// retn
+unsigned char pdExpLicenseWatchInitWorker_17133[] = { 0x33, 0xC0, 0x48, 0x83, 0xC4, 0x30, 0x5B, 0xC3};
 
 //Windows 8, Windows 10 RS2
 unsigned char ptExpLicenseWatchInitWorker1[] = { 0x48, 0x83, 0xEC, 0x38, 0x48, 0x8B, 0x05 };
@@ -195,6 +207,11 @@ unsigned char ptExpLicenseWatchInitWorker1[] = { 0x48, 0x83, 0xEC, 0x38, 0x48, 0
 //Windows 8.1/10 TH1/TH2/RS1/RS3
 unsigned char ptExpLicenseWatchInitWorker2[] = { 0x40, 0x53, 0x48, 0x83, 0xEC, 0x30, 0x48, 0x8B, 0x05 };
 
+//Windows 10 RS4 (not using function prologue)
+// mov r11, [rax+78h]
+// mov rbx, [rax+70h]
+//
+unsigned char ptExpLicenseWatchInitWorker_17133[] = { 0x4C, 0x8B, 0x58, 0x78, 0x48, 0x8B, 0x58, 0x70 };
 
 //********************************************************
 //
@@ -211,21 +228,29 @@ unsigned char pdSepInitializeCodeIntegrity[] = { 0x31, 0xC9 };
 // Signature patterns for function scan.
 //
 
-//mov ecx, edi
-//call
+//
+// mov ecx, edi
+// call
+//
 unsigned char ptSepInitializeCodeIntegrity_7601[] = { 0x8B, 0xCF, 0xE8 };
 
-//mov ecx, edi
-//mov rbx,
+//
+// mov ecx, edi
+// mov rbx,
+//
 unsigned char ptSepInitializeCodeIntegrity_9200_14393[] = { 0x8B, 0xCF, 0x48 };
 
-//mov ecx, esi
-//mov rbx,
+//
+// mov ecx, esi
+// mov rbx,
+//
 unsigned char ptSepInitializeCodeIntegrity_15063[] = { 0x8B, 0xCE, 0x48 };
 
-//mov ecx, edi
-//call
-unsigned char ptSepInitializeCodeIntegrity_16299[] = { 0x8B, 0xCF, 0xFF };
+//
+// mov ecx, edi
+// call
+//
+unsigned char ptSepInitializeCodeIntegrity_16299_17133[] = { 0x8B, 0xCF, 0xFF };
 
 //
 // Signature patterns for function itself.
@@ -273,14 +298,23 @@ unsigned char ptSepInitializeCodeIntegrity2_16299[] = {
     0x00, 0x00, 0x00
 };
 
+//Windows 10 RS4
+unsigned char ptSepInitializeCodeIntegrity2_17133[] = {
+    0x48, 0x89, 0x5C, 0x24, 0x08, 0x57,
+    0x48, 0x83, 0xEC, 0x20, 0xBB, 0xD0,
+    0x00, 0x00, 0x00
+};
+
 //********************************************************
 //
 // Search/Patch patterns for ImgpValidateImageHash
 //
 //********************************************************
 
-//xor eax, eax 
-//retn
+//
+// xor eax, eax 
+// retn
+//
 unsigned char pdImgpValidateImageHash[] = { 0x33, 0xC0, 0xC3 };
 
 //
@@ -324,7 +358,7 @@ unsigned char ptImgpValidateImageHash_15063[] = {
     0x8D, 0xA8, 0x78, 0xFE, 0xFF, 0xFF
 };
 
-unsigned char ptImgpValidateImageHash_16299[] = {
+unsigned char ptImgpValidateImageHash_16299_17133[] = {
     0x48, 0x8B, 0xC4, 0x4C, 0x89, 0x48, 0x20, 0x44, 0x89, 0x40, 0x18, 0x48, 0x89, 0x50, 0x10, 0x48,
     0x89, 0x48, 0x08, 0x55, 0x53, 0x56, 0x57, 0x41, 0x54, 0x41, 0x55, 0x41, 0x56, 0x41, 0x57, 0x48,
     0x8D, 0xA8, 0xA8, 0xFE, 0xFF, 0xFF

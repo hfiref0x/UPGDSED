@@ -1,12 +1,12 @@
 /*******************************************************************************
 *
-*  (C) COPYRIGHT AUTHORS, 2017
+*  (C) COPYRIGHT AUTHORS, 2017 - 2018
 *
 *  TITLE:       BCD.C
 *
-*  VERSION:     1.11
+*  VERSION:     1.30
 *
-*  DATE:        28 June 2017
+*  DATE:        30 Mar 2018
 *
 *  Boot Configuration Data related routines.
 *
@@ -486,22 +486,23 @@ BOOL BcdCreatePatchEntry(
 
     do {
 
+#if 0
         //
         // Set bootmgr option
         // Commented for bitlocker compatibility.
         //
-       /* _strcat(szCommand, TEXT("-set {bootmgr} nointegritychecks 1"));
+        _strcat(szCommand, TEXT("-set {bootmgr} nointegritychecks 1"));
         cuiPrintText(g_ConOut, &szCommand[CmdLength], g_ConsoleOutput, TRUE);
 
         if (!supRunProcessWithParamsAndWait(szCommand, &ExitCode))
             break;
 
         if (ExitCode != 0)
-            break;*/
-
-            //
-            // Create new entry.
-            //
+            break;
+#endif
+        //
+        // Create new entry.
+        //
         szCommand[Length] = 0;
         _strcat(szCommand, TEXT("-create "));
         _strcat(szCommand, BCD_PATCH_ENTRY_GUID);
@@ -723,7 +724,6 @@ BOOL BcdCreatePatchEntry(
         bResult = TRUE;
 
     } while (bCond);
-
 
     return bResult;
 }

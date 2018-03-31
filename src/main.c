@@ -4,9 +4,9 @@
 *
 *  TITLE:       MAIN.C
 *
-*  VERSION:     1.21
+*  VERSION:     1.30
 *
-*  DATE:        29 Mar 2018
+*  DATE:        30 Mar 2018
 *
 * THIS CODE AND INFORMATION IS PROVIDED "AS IS" WITHOUT WARRANTY OF
 * ANY KIND, EITHER EXPRESSED OR IMPLIED, INCLUDING BUT NOT LIMITED
@@ -70,7 +70,7 @@ BOOLEAN ScanNtos(
     ULONG               MajorVersion = 0, MinorVersion = 0, BuildNumber = 0, Revision = 0;
 
     PBYTE               DllBase = NULL;
-    SIZE_T              DllVirtualSize;
+    SIZE_T              DllVirtualSize = 0;
     IMAGE_NT_HEADERS   *NtHeaders;
 
     WCHAR szBuffer[MAX_PATH * 2];
@@ -86,7 +86,7 @@ BOOLEAN ScanNtos(
 #else 
         //_strcpy(szBuffer, L"D:\\dumps\\pgos\\6.1.7601.18471\\ntoskrnl.exe");
         //_strcpy(szBuffer, L"D:\\dumps\\pgos\\6.1.7601.23418\\ntoskrnl.exe");
-        _strcpy(szBuffer, L"D:\\dumps\\pgos\\6.1.7601.24059\\ntoskrnl.exe");
+        //_strcpy(szBuffer, L"D:\\dumps\\pgos\\6.1.7601.24059\\ntoskrnl.exe");
         //_strcpy(szBuffer, L"D:\\dumps\\pgos\\6.2.9200.16384\\ntoskrnl.exe");
         //_strcpy(szBuffer, L"D:\\dumps\\pgos\\6.3.9600.18589\\ntoskrnl.exe");
         //_strcpy(szBuffer, L"D:\\dumps\\pgos\\10.0.10240.16384\\ntoskrnl.exe");
@@ -94,6 +94,7 @@ BOOLEAN ScanNtos(
         //_strcpy(szBuffer, L"D:\\dumps\\pgos\\10.0.14393.0\\ntoskrnl.exe");
         //_strcpy(szBuffer, L"D:\\dumps\\pgos\\10.0.15063.0\\ntoskrnl.exe");
         //_strcpy(szBuffer, L"D:\\dumps\\pgos\\10.0.16299.15\\ntoskrnl.exe");
+        _strcpy(szBuffer, L"D:\\dumps\\pgos\\10.0.17133.1\\ntoskrnl.exe");
 #endif
 
         if (!supGetBinaryVersionNumbers(
@@ -246,7 +247,7 @@ BOOLEAN ScanNtos(
         }
 
         //
-        //Scan for SepInitializeCodeIntegrity
+        // Scan for SepInitializeCodeIntegrity
         //
         if (!QuerySepInitializeCodeIntegrityOffset(
             BuildNumber,
@@ -318,7 +319,8 @@ BOOLEAN ScanWinload(
         //_strcpy(szBuffer, L"D:\\dumps\\pgos\\10.0.10586.0\\winload.exe");
         //_strcpy(szBuffer, L"D:\\dumps\\pgos\\10.0.14393.0\\winload.exe");
         //_strcpy(szBuffer, L"D:\\dumps\\pgos\\10.0.15063.0\\winload.exe");
-        _strcpy(szBuffer, L"D:\\dumps\\pgos\\10.0.16299.15\\winload.exe");
+        //_strcpy(szBuffer, L"D:\\dumps\\pgos\\10.0.16299.15\\winload.exe");
+        _strcpy(szBuffer, L"D:\\dumps\\pgos\\10.0.17133.1\\winload.exe");
 #endif
 
         if (!supGetBinaryVersionNumbers(
