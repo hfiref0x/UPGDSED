@@ -6,7 +6,7 @@
 *
 *  VERSION:     1.30
 *
-*  DATE:        30 Mar 2018
+*  DATE:        18 Apr 2018
 *
 * THIS CODE AND INFORMATION IS PROVIDED "AS IS" WITHOUT WARRANTY OF
 * ANY KIND, EITHER EXPRESSED OR IMPLIED, INCLUDING BUT NOT LIMITED
@@ -94,7 +94,7 @@ BOOLEAN ScanNtos(
         //_strcpy(szBuffer, L"D:\\dumps\\pgos\\10.0.14393.0\\ntoskrnl.exe");
         //_strcpy(szBuffer, L"D:\\dumps\\pgos\\10.0.15063.0\\ntoskrnl.exe");
         //_strcpy(szBuffer, L"D:\\dumps\\pgos\\10.0.16299.15\\ntoskrnl.exe");
-        _strcpy(szBuffer, L"D:\\dumps\\pgos\\10.0.17133.1\\ntoskrnl.exe");
+        _strcpy(szBuffer, L"D:\\dumps\\pgos\\10.0.17134.1\\ntoskrnl.exe");
 #endif
 
         if (!supGetBinaryVersionNumbers(
@@ -320,7 +320,7 @@ BOOLEAN ScanWinload(
         //_strcpy(szBuffer, L"D:\\dumps\\pgos\\10.0.14393.0\\winload.exe");
         //_strcpy(szBuffer, L"D:\\dumps\\pgos\\10.0.15063.0\\winload.exe");
         //_strcpy(szBuffer, L"D:\\dumps\\pgos\\10.0.16299.15\\winload.exe");
-        _strcpy(szBuffer, L"D:\\dumps\\pgos\\10.0.17133.1\\winload.exe");
+        _strcpy(szBuffer, L"D:\\dumps\\pgos\\10.0.17134.1\\winload.exe");
 #endif
 
         if (!supGetBinaryVersionNumbers(

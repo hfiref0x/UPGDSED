@@ -7,7 +7,7 @@
 *
 *  VERSION:     1.30
 *
-*  DATE:        30 Mar 2018
+*  DATE:        17 Apr 2018
 *
 *  Common header file for the project.
 *
@@ -76,7 +76,7 @@
 #define MAX_PATCH_COUNT 10
 
 #define MIN_SUPPORTED_NT_BUILD 7601  //Windows 7 SP1
-#define MAX_SUPPORTED_NT_BUILD 17133 //Windows 10 RS4
+#define MAX_SUPPORTED_NT_BUILD 17134 //Windows 10 RS4
 
 typedef struct _PATCH_CONTEXT {
     ULONG_PTR AddressOfPatch;

@@ -6,7 +6,7 @@
 *
 *  VERSION:     1.30
 *
-*  DATE:        30 Mar 2018
+*  DATE:        18 Apr 2018
 *
 * THIS CODE AND INFORMATION IS PROVIDED "AS IS" WITHOUT WARRANTY OF
 * ANY KIND, EITHER EXPRESSED OR IMPLIED, INCLUDING BUT NOT LIMITED
@@ -388,9 +388,9 @@ BOOLEAN QueryKeInitAmd64SpecificStateOffset(
             case 14393:
             case 15063:
             case 16299:
-            case 17133:
-                Pattern = ptKeInitAmd64SpecificState_9200_17133;
-                PatternSize = sizeof(ptKeInitAmd64SpecificState_9200_17133);
+            case 17134:
+                Pattern = ptKeInitAmd64SpecificState_9200_17134;
+                PatternSize = sizeof(ptKeInitAmd64SpecificState_9200_17134);
                 break;
 
             default:
@@ -482,11 +482,11 @@ BOOLEAN QueryExpLicenseWatchInitWorkerOffset(
                 PatternSize = sizeof(ptExpLicenseWatchInitWorker2);
                 break;
 
-            case 17133:
-                Pattern = ptExpLicenseWatchInitWorker_17133;
-                PatternSize = sizeof(ptExpLicenseWatchInitWorker_17133);
-                PatchData = pdExpLicenseWatchInitWorker_17133;
-                PatchSize = sizeof(pdExpLicenseWatchInitWorker_17133);
+            case 17134:
+                Pattern = ptExpLicenseWatchInitWorker_17134;
+                PatternSize = sizeof(ptExpLicenseWatchInitWorker_17134);
+                PatchData = pdExpLicenseWatchInitWorker_17134;
+                PatchSize = sizeof(pdExpLicenseWatchInitWorker_17134);
                 break;
 
             default:
@@ -588,9 +588,9 @@ BOOLEAN QueryKiFilterFiberContextOffset(
                 break;
 
             case 16299:
-            case 17133:
-                Pattern = ptKiFilterFiberContext_16299_17133;
-                PatternSize = sizeof(ptKiFilterFiberContext_16299_17133);
+            case 17134:
+                Pattern = ptKiFilterFiberContext_16299_17134;
+                PatternSize = sizeof(ptKiFilterFiberContext_16299_17134);
                 break;
 
             default:
@@ -710,9 +710,9 @@ BOOLEAN QueryCcInitializeBcbProfilerOffset(
             case 14393:
             case 15063:
             case 16299:
-            case 17133:
-                PatternSize = sizeof(ptCcInitializeBcbProfiler_10240_17133);
-                Pattern = ptCcInitializeBcbProfiler_10240_17133;
+            case 17134:
+                PatternSize = sizeof(ptCcInitializeBcbProfiler_10240_17134);
+                Pattern = ptCcInitializeBcbProfiler_10240_17134;
                 break;
 
             default:
@@ -816,13 +816,13 @@ BOOLEAN QuerySeValidateImageDataOffset(
     case 14393:
     case 15063:
     case 16299:
-    case 17133:
+    case 17134:
 
         //
         // Pattern to scan from the SeValidateImageData proc start.
         //
-        Pattern = ptSeValidateImageData_9600_17133;
-        PatternSize = sizeof(ptSeValidateImageData_9600_17133);
+        Pattern = ptSeValidateImageData_9600_17134;
+        PatternSize = sizeof(ptSeValidateImageData_9600_17134);
 
         ScanPtr = (PVOID)SymbolAddressFromName(TEXT("SeValidateImageData"));
 
@@ -837,7 +837,7 @@ BOOLEAN QuerySeValidateImageDataOffset(
             ScanSize = 0x200;
         }
 
-        SkipBytes = ptSkipBytesSeValidateImageData_9600_17133;
+        SkipBytes = ptSkipBytesSeValidateImageData_9600_17134;
         break;
 
     default:
@@ -866,9 +866,9 @@ BOOLEAN QuerySeValidateImageDataOffset(
 
         case 15063:
         case 16299:
-        case 17133:
-            Pattern = ptSeValidateImageData_2_15063_17133;
-            PatternSize = sizeof(ptSeValidateImageData_2_15063_17133);
+        case 17134:
+            Pattern = ptSeValidateImageData_2_15063_17134;
+            PatternSize = sizeof(ptSeValidateImageData_2_15063_17134);
             break;
 
         default:
@@ -980,9 +980,9 @@ BOOLEAN QuerySepInitializeCodeIntegrityOffset(
                 PatternSize = sizeof(ptSepInitializeCodeIntegrity2_16299);
                 break;
 
-            case 17133:
-                Pattern = ptSepInitializeCodeIntegrity2_17133;
-                PatternSize = sizeof(ptSepInitializeCodeIntegrity2_17133);
+            case 17134:
+                Pattern = ptSepInitializeCodeIntegrity2_17134;
+                PatternSize = sizeof(ptSepInitializeCodeIntegrity2_17134);
                 break;
 
             default:
@@ -1034,9 +1034,9 @@ BOOLEAN QuerySepInitializeCodeIntegrityOffset(
         break;
 
     case 16299:
-    case 17133:
-        Pattern = ptSepInitializeCodeIntegrity_16299_17133;
-        PatternSize = sizeof(ptSepInitializeCodeIntegrity_16299_17133);
+    case 17134:
+        Pattern = ptSepInitializeCodeIntegrity_16299_17134;
+        PatternSize = sizeof(ptSepInitializeCodeIntegrity_16299_17134);
         break;
 
     default:
@@ -1169,9 +1169,9 @@ BOOLEAN QueryImgpValidateImageHashOffsetSignatures(
         break;
 
     case 16299:
-    case 17133:
-        Pattern = ptImgpValidateImageHash_16299_17133;
-        PatternSize = sizeof(ptImgpValidateImageHash_16299_17133);
+    case 17134:
+        Pattern = ptImgpValidateImageHash_16299_17134;
+        PatternSize = sizeof(ptImgpValidateImageHash_16299_17134);
         break;
 
     default:

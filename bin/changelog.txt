@@ -1,5 +1,8 @@
 Changes since v1.0.0 release
 
+v1.3.0 Apr 18, 2018
+17134 build support
+
 v1.3.0 Mar 30, 2018
 Experimental Windows RS4 support (untested)
 
