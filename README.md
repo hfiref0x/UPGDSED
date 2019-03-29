@@ -42,6 +42,15 @@ Navigate to Windows\System32 folder and delete ntkrnlmp.exe, osloader.exe (BIOS 
 UPGDSED comes with full source code.
 In order to build from source you need Microsoft Visual Studio 2015 and later versions.
 
+# Deprecation
+
+The project has been depricated in 2018. No further updates (or plans on them) are available. If you still need PatchGuard disable refer to these repositories (alphabetical order):
+
+* EfiGuard, https://github.com/Mattiwatti/EfiGuard
+* Shark, https://github.com/9176324/Shark
+
+This repository is kept read-only for historical purposes.
+
 # References
 
 * Bypassing PatchGuard on Windows x64 by Skywing, http://www.uninformed.org/?v=3&a=3&t=sumry
