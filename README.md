@@ -44,7 +44,7 @@ In order to build from source you need Microsoft Visual Studio 2015 and later ve
 
 # Deprecation
 
-The project has been depricated in 2018. No further updates (or plans on them) are available. If you still need PatchGuard disable refer to these repositories (alphabetical order):
+The project has been deprecated in 2018. No further updates (or plans on them) are available. If you still need PatchGuard disable refer to these repositories (alphabetical order):
 
 * EfiGuard, https://github.com/Mattiwatti/EfiGuard
 * Shark, https://github.com/9176324/Shark
